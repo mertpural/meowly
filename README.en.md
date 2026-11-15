@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://meowly.vercel.app"><img src="assets/icon.png" width="110" alt="Meowly"></a>
+<a href="https://meowly.vercel.app"><img src="assets/meowly-icon.png" width="110" alt="Meowly"></a>
 
 # Meowly
 
