@@ -40,7 +40,7 @@ Günlük, haftalık, aylık ve yıllık rapor. Standup notu olarak kopyala ya da
 
 <a href="https://meowly.vercel.app"><img src="assets/stage-sleep.png" alt="Kullanıcı uzaktayken kedi uyur"></a>
 
-Bilgisayardan kalkınca kıvrılıp uyur, dönünce esneyip uyanır. Okşayınca mırlar, sürükleyip taşıyabilirsin.
+Bilgisayardan kalkınca kıvrılıp uyur, dönünce esneyip uyanır. Okşayınca mırlar, enseden tutup taşıyabilirsin.
 **Adını sen koyarsın.**
 
 ## GitHub profil kartı
