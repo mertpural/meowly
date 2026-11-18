@@ -6,10 +6,10 @@
 
 ### Kodunu yaz. Kedin not alsın.
 
-Mac masaüstünde yaşayan piksel bir kedi. Claude ve Codex limitlerin menü çubuğunda;<br>
+Mac ve Windows masaüstünde yaşayan piksel bir kedi. Claude ve Codex limitlerin menü çubuğunda (Windows'ta görev çubuğunda);<br>
 yapay zekâ oturumların ve commit'lerin kendiliğinden günlüğe ve rapora dönüşür.
 
-<a href="https://meowly.vercel.app"><img src="https://img.shields.io/badge/%E2%86%93%20Meowly'yi%20indir-%C3%BCcretsiz%20%C2%B7%20macOS%2014%2B-e88fa3?style=for-the-badge" alt="Meowly'yi indir"></a>
+<a href="https://meowly.vercel.app"><img src="https://img.shields.io/badge/%E2%86%93%20Meowly'yi%20indir-%C3%BCcretsiz%20%C2%B7%20macOS%20%26%20Windows-e88fa3?style=for-the-badge" alt="Meowly'yi indir"></a>
 &nbsp;
 <a href="https://meowly.vercel.app"><img src="https://img.shields.io/badge/Siteye%20git-meowly.vercel.app-160c0c?style=for-the-badge" alt="Site"></a>
 
@@ -56,13 +56,13 @@ Bir yıllık token kullanımın profil README'nde. Kareler servise göre renklen
 
 ## Gizlilik
 
-Sunucu yok, hesap yok. Her şey Mac'inde kalır. Sohbetlerini, ekranını, bastığın tuşları ve dosyalarının içeriğini asla okumaz.
+Sunucu yok, hesap yok. Her şey kendi bilgisayarında kalır. Sohbetlerini, ekranını, bastığın tuşları ve dosyalarının içeriğini asla okumaz.
 
 <div align="center">
 
 ### [→ meowly.vercel.app](https://meowly.vercel.app)
 
-Ücretsiz · macOS 14 ve üstü · Apple Silicon ve Intel
+Ücretsiz · macOS 14+ (Apple Silicon ve Intel) · Windows 10/11 (64 bit)
 
 Meowly gününü biraz güzelleştiriyorsa bir ⭐ başkalarının da bulmasına yardım eder.
 

@@ -6,10 +6,10 @@
 
 ### You write the code. Your cat takes notes.
 
-A pixel cat that lives on your Mac desktop. Your Claude and Codex limits sit in the menu bar;<br>
+A pixel cat that lives on your Mac or Windows desktop. Your Claude and Codex limits sit in the menu bar (taskbar on Windows);<br>
 your AI coding sessions and commits turn into a diary and reports on their own.
 
-<a href="https://meowly.vercel.app"><img src="https://img.shields.io/badge/%E2%86%93%20Download%20Meowly-free%20%C2%B7%20macOS%2014%2B-e88fa3?style=for-the-badge" alt="Download Meowly"></a>
+<a href="https://meowly.vercel.app"><img src="https://img.shields.io/badge/%E2%86%93%20Download%20Meowly-free%20%C2%B7%20macOS%20%26%20Windows-e88fa3?style=for-the-badge" alt="Download Meowly"></a>
 &nbsp;
 <a href="https://meowly.vercel.app"><img src="https://img.shields.io/badge/Website-meowly.vercel.app-160c0c?style=for-the-badge" alt="Website"></a>
 
@@ -42,13 +42,13 @@ A year of token usage on your profile README. Daily totals only; no projects or 
 
 ## Privacy
 
-No server, no account. Everything stays on your Mac. It never reads your chats, your screen, your keystrokes or your files' contents.
+No server, no account. Everything stays on your computer. It never reads your chats, your screen, your keystrokes or your files' contents.
 
 <div align="center">
 
 ### [→ meowly.vercel.app](https://meowly.vercel.app)
 
-Free · macOS 14 or later · Apple Silicon and Intel
+Free · macOS 14+ (Apple Silicon and Intel) · Windows 10/11 (64-bit)
 
 If Meowly makes your day a little nicer, a ⭐ helps others find it.
 
