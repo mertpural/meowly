@@ -1,0 +1,51 @@
+/* Raporlar ölçüleri (Mac: ReportsPage — başlık 24/22, denetimler 24/14; ReportCard 660 genişlik, 20 kenar boşluğu). */
+.reports { padding-bottom: 24px; }
+.rpad { padding: 22px 24px 0; }
+.rctl { gap: 8px; padding: 14px 24px; }
+.rlabel { font-size: 12px; min-width: 200px; text-align: center; }
+.rbody { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.rcard { width: 660px; padding: 20px; display: flex; flex-direction: column; gap: 14px; color: var(--ink); }
+.rh { align-items: flex-start; }
+.rt { font-size: 20px; }
+.rl { font-size: 11px; }
+.brand2 { font-size: 10.5px; margin-right: 6px; }
+.rcat { height: 34px; }
+.rdiv { height: 2px; background: var(--ink); }
+.rcols { display: flex; gap: 22px; align-items: stretch; }
+.rship { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.rsep { width: 2px; background: var(--line); flex: none; }
+.rnums { width: 170px; flex: none; display: flex; flex-direction: column; gap: 10px; }
+.rk { font-size: 10px; font-weight: 700; color: var(--pink); letter-spacing: 0.8px; }
+.rp { display: flex; flex-direction: column; gap: 4px; }
+.rp b { font-size: 12.5px; }
+.rp .r { font-size: 10.5px; }
+.rc { display: flex; align-items: baseline; gap: 6px; }
+.rc b { font-size: 11px; color: var(--pink); }
+.rc span { font-size: 11px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.more { font-size: 10.5px; }
+a.more { font-weight: 600; color: var(--pink); text-decoration: underline; cursor: pointer; }
+.rn { display: flex; align-items: baseline; gap: 6px; }
+.rn b { font-size: 16px; }
+.rn span { font-size: 9px; color: var(--sub); letter-spacing: 0.6px; }
+.rbusy { display: flex; flex-direction: column; gap: 1px; }
+.rbusy span { font-size: 9px; color: var(--sub); letter-spacing: 0.6px; }
+.rbusy b { font-size: 12px; }
+.rbusy .d { font-size: 10.5px; letter-spacing: 0; }
+.rchart { height: 70px; display: flex; align-items: flex-end; }
+.rb { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.rb i { display: block; width: 100%; }
+.rb span { font-size: 9px; color: var(--sub); }
+.rfoot { font-size: 9.5px; }
+.rbtns { gap: 8px; }
+.rnote { font-size: 11px; }
+
+/* Bilgisayarda satırı (Mac: ReportCard.computerRow — 8 aralık, 5 sütun, simge 14, çubuk en çok 100). */
+.rpc { display: flex; flex-direction: column; gap: 8px; }
+.rpc > .row b { font-size: 11px; }
+.rpapps { display: flex; gap: 10px; align-items: flex-start; }
+.rpa { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rpa .row { gap: 5px; min-width: 0; height: 15px; align-items: center; }
+.rpa img { width: 14px; height: 14px; flex: none; }
+.rpa b { font-size: 10.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rpa i { display: block; height: 4px; background: var(--pink); }
+.rpa .sub { font-size: 9.5px; }

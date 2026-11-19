@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Meowly</title>
+<link rel="stylesheet" href="tonti.css">
+<style>
+  /* Mac: Tonti/StarPrompt.swift → PromptView (400×300, 24 kenar boşluğu, 12 aralık). */
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--paper); }
+  #root { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; box-sizing: border-box; color: var(--ink); }
+  #root img { height: 74px; }
+  .t { font-size: 13.5px; font-weight: 700; text-align: center; line-height: 1.35; }
+  .s { font-size: 11px; color: var(--sub); text-align: center; line-height: 1.4; }
+  .bs { display: flex; gap: 8px; }
+  .never { font: 10.5px var(--mono); color: var(--sub); background: none; border: 0; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="root">
+  <img class="px-img" src="img/cat/content.png" alt="">
+  <div class="t" data-k="Beni sevdiysen GitHub'da bir yıldız verir misin?">Beni sevdiysen GitHub'da bir yıldız verir misin?</div>
+  <div class="s" data-k="Böylece başkaları da Meowly'yi bulur. Yalnızca bir kez soruyorum.">Böylece başkaları da Meowly'yi bulur. Yalnızca bir kez soruyorum.</div>
+  <div class="bs"><button class="btn px on" data-c="star" data-k="⭐ YILDIZ VER">⭐ YILDIZ VER</button><button class="btn px" data-c="later" data-k="SONRA">SONRA</button></div>
+  <button class="never" data-c="never" data-k="Bir daha sorma">Bir daha sorma</button>
+</div>
+<script src="common.js"></script>
+<script>
+  // Yalnızca nazikçe sorar, karşılığında hiçbir şey vermez. "Yıldız ver" depo sayfasını tarayıcıda açar; hiçbir şey gönderilmez.
+  (async () => {
+    await T.load();
+    const st = await invoke("get_state");
+    setTheme(st && st.dark);
+    document.querySelectorAll("[data-k]").forEach(e => { e.textContent = T.t(e.dataset.k); });
+    let sent = false;
+    document.querySelectorAll("[data-c]").forEach(b => b.addEventListener("click", () => {
+      if (sent) return; sent = true; invoke("star_done", { choice: b.dataset.c });
+    }));
+  })();
+</script>
+</body>
+</html>

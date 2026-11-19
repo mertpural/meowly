@@ -1,0 +1,121 @@
+/* Meowly — Tonti görsel dili (Mac: Tonti/TontiUI.swift → TC, PixelRect, PxButton, PxSwitch). */
+@font-face { font-family: "JBM"; src: url(fonts/JetBrainsMono-Regular.ttf); font-weight: 400; }
+@font-face { font-family: "JBM"; src: url(fonts/JetBrainsMono-Medium.ttf); font-weight: 500; }
+@font-face { font-family: "JBM"; src: url(fonts/JetBrainsMono-SemiBold.ttf); font-weight: 600; }
+@font-face { font-family: "JBM"; src: url(fonts/JetBrainsMono-Bold.ttf); font-weight: 700; }
+@font-face { font-family: "JBM"; src: url(fonts/JetBrainsMono-ExtraBold.ttf); font-weight: 800; }
+
+:root {
+  --paper: #fbf8f3;
+  --side: #f3eee7;
+  --card: #ffffff;
+  --ink: #160c0c;
+  --sub: #8a807d;
+  --line: #e3dbd4;
+  --pink: #e88fa3;
+  --pink-bg: #fae8ed;
+  --amber: #cf8c29;
+  --amber-bg: #faf0db;
+  --shadow: rgba(22, 12, 12, 0.14);
+  --accent: #db6b87;
+  --heat0: #ede8e0; --heat1: #f5ccd6; --heat2: #f0a6b5; --heat3: #e37a94; --heat4: #b84f69;
+  --mono: "JBM", "Cascadia Mono", Consolas, monospace;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --paper: #121214;
+  --side: #19191b;
+  --card: #222225;
+  --ink: #f0f0ed;
+  --sub: #9e9ea6;
+  --line: #404045;
+  --pink-bg: #542e3b;
+  --amber-bg: #524024;
+  --shadow: rgba(0, 0, 0, 0.45);
+  --accent: #e88fa3;
+  --heat0: #303035;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.2;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+/* Kaydırma çubukları gizli (sayfalar kayar, çubuk görünmez). */
+::-webkit-scrollbar { width: 0; height: 0; }
+img.px-img { image-rendering: pixelated; }
+.sub { color: var(--sub); }
+.amber { color: var(--amber); }
+
+/* Piksel çerçeve: köşeleri iki basamaklı kesik dikdörtgen, 2 pt mürekkep çizgi (PixelRect step 2). */
+.px {
+  position: relative;
+  isolation: isolate;
+  --fill: var(--card);
+  --stroke: var(--ink);
+}
+.px::before, .px::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, calc(100% - 4px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 4px,
+    100% 4px, 100% calc(100% - 4px), calc(100% - 2px) calc(100% - 4px), calc(100% - 2px) calc(100% - 2px),
+    calc(100% - 4px) calc(100% - 2px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 2px), 2px calc(100% - 2px),
+    2px calc(100% - 4px), 0 calc(100% - 4px), 0 4px, 2px 4px, 2px 2px, 4px 2px);
+}
+.px::before { inset: 0; background: var(--stroke); }
+.px::after { inset: 2px; background: var(--fill); }
+/* Kaldırılmış kart: sağ alta düz gölge (pxCard lift). */
+.px.lift { filter: drop-shadow(3px 3px 0 var(--shadow)); }
+
+.card { padding: 12px; }
+
+/* PxButton / Pill: mono 11 kalın; seçiliyken mürekkep dolgu + kâğıt yazı. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font: 700 11px/1.2 var(--mono);
+  color: var(--ink);
+  padding: 5px 10px;
+  border: 0; background: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.btn.on, .btn:active { --fill: var(--ink); color: var(--paper); }
+.btn svg { width: 13px; height: 13px; }
+.btn svg.f { fill: var(--ink); }
+.btn svg.s { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.btn.on svg.f, .btn:active svg.f { fill: var(--paper); }
+.btn.on svg.s, .btn:active svg.s { stroke: var(--paper); }
+
+.row { display: flex; align-items: center; }
+.col { display: flex; flex-direction: column; }
+.spacer { flex: 1; }
+
+/* Limit çubuğu (PaceBar, blok biçim): iz, dolgu, 2 pt çerçeve, tempo işareti. */
+.pace { position: relative; height: 14px; }
+.pace .track {
+  position: absolute; left: 0; right: 0; top: 3px; height: 8px;
+  background: color-mix(in srgb, var(--sub) 25%, var(--card));
+  box-shadow: 0 0 0 1px var(--ink), inset 0 0 0 1px var(--ink);
+  overflow: hidden;
+}
+.pace .fill { position: absolute; left: 0; top: 0; bottom: 0; }
+.pace .mark { position: absolute; top: 0; width: 2px; height: 14px; background: color-mix(in srgb, var(--ink) 70%, transparent); }
+
+/* Yapay zekâ aracı bulunamadı uyarısı (Kullanım, Günlük, Raporlar). */
+.notools { display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin: 0; background: var(--pink-bg); color: var(--ink); }
+.notools img { height: 40px; flex: none; }
+.notools .col { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.notools b { font-size: 12px; }
+.notools span { font-size: 11px; color: var(--sub); line-height: 1.45; }
+.notools .btn { flex: none; }
+.diary .notools { margin: 0 24px 10px; }
+.reports .notools { margin: 14px 24px 0; }

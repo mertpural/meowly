@@ -1,0 +1,64 @@
+/* Ayarlar ölçüleri (Mac: SettingsPage — başlık 20, sekmeler 24/12, içerik 24 kenar boşluğu, 16 aralık; SettingRow 14). */
+.settings { display: flex; flex-direction: column; height: 100%; }
+.settings .page-title { padding: 10px 24px 0; }
+.settings .tabs { padding: 12px 24px; }
+.sbody { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.srow { padding: 14px; display: flex; align-items: center; gap: 16px; }
+.sl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.sl b { font-size: 13px; font-weight: 600; }
+.sl span { font-size: 11px; color: var(--sub); line-height: 1.35; }
+.sc { flex: none; display: flex; align-items: center; margin-left: 12px; }
+.scard2 { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.snote { font-size: 12px; color: var(--sub); }
+.smini { font-size: 10px; color: var(--sub); }
+.lbl { font-size: 10px; font-weight: 700; color: var(--sub); }
+/* PxSwitch: 42×22, açıkken pembe dolgu ve sağda kâğıt renkli kare topuz. */
+.pxsw { width: 42px; height: 22px; border: 0; padding: 0; cursor: pointer; background: none; --fill: var(--card); }
+.pxsw.on { --fill: var(--pink); }
+.pxsw i { position: absolute; top: 5px; left: 5px; width: 12px; height: 12px; background: var(--ink); transition: left 0.12s ease-out; }
+.pxsw.on i { left: 25px; background: var(--paper); }
+.namebox { display: inline-flex; gap: 8px; align-items: center; }
+.pxin { border: 0; outline: none; font: 700 12px var(--mono); color: var(--ink); width: 150px; padding: 5px 8px; background: none; }
+.pxin::placeholder { color: var(--sub); font-weight: 400; }
+.checks { gap: 10px; }
+.setup .si { display: flex; align-items: flex-start; gap: 10px; }
+.setup .si i { width: 15px; height: 15px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 9px; font-weight: 800; margin-top: 1px; }
+.setup .si i.ok { background: var(--ink); color: var(--paper); }
+.setup .si i.no { box-shadow: inset 0 0 0 1.5px var(--amber); color: var(--amber); }
+.setup .si b { font-size: 12px; font-weight: 600; display: block; }
+.setup .si span { font-size: 10px; color: var(--sub); display: block; margin-top: 2px; }
+.prov { gap: 14px; }
+.prov .sl b { font-size: 14px; }
+.prov .sl > span { font-size: 10px; }
+.ctag { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 99px; }
+.prevbg { padding: 7px 14px; display: inline-flex; }
+.sgrid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stc { padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; background: var(--card); border-radius: 3px;
+  box-shadow: inset 0 0 0 2px var(--ink); cursor: pointer; }
+.stc.on { box-shadow: inset 0 0 0 2px var(--accent); }
+.stc .stp { width: 100%; height: 44px; display: flex; align-items: center; justify-content: center; }
+.stc span { font-size: 11px; }
+.stc.on span { font-weight: 600; }
+.privacy { padding: 16px; }
+.privacy .pi { font-size: 12.5px; font-weight: 600; line-height: 1.35; }
+.privacy .pk { font-size: 10px; font-weight: 700; color: var(--pink); }
+.bl { display: flex; align-items: baseline; gap: 6px; }
+.bl b { font-size: 12px; }
+.bl span { font-size: 11.5px; color: var(--sub); }
+.pxmenu { position: relative; }
+.mlist { position: absolute; right: 0; top: 30px; z-index: 5; display: flex; flex-direction: column; padding: 6px 0; min-width: 160px; }
+.mlist a { padding: 5px 12px; font-size: 12px; cursor: pointer; }
+.mlist a:hover { background: var(--ink); color: var(--paper); }
+.limits { padding: 16px; gap: 8px; }
+.limits b, .labels b { font-size: 13px; font-weight: 600; }
+.limits span, .labels span { font-size: 12px; color: var(--sub); line-height: 1.35; }
+.labels { padding: 16px; }
+.about { padding: 16px; flex-direction: row; align-items: center; gap: 16px; }
+.abox { width: 72px; height: 72px; border-radius: 16px; background: var(--paper); box-shadow: inset 0 0 0 2px var(--ink); display: flex; align-items: center; justify-content: center; flex: none; }
+.abox img { height: 58px; }
+.upd { padding: 16px; }
+.btn[disabled] { opacity: 0.45; cursor: default; }
+
+.pxinw { display: inline-flex; }
+.wnote { flex-direction: row; align-items: center; gap: 12px; }
+.pxsw[disabled] { opacity: 0.45; cursor: default; }

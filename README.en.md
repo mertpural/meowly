@@ -40,6 +40,17 @@ A year of token usage on your profile README. Daily totals only; no projects or 
 </picture>
 </a>
 
+## Source code
+
+Meowly is open source: the code is licensed under [GPL-3.0](LICENSE). The cat artwork, the "Meowly" name and logo are not covered by that license ([ASSETS-LICENSE.md](ASSETS-LICENSE.md)).
+
+| Folder | What | Build |
+|---|---|---|
+| [`mac/`](mac) | Swift / SwiftUI, macOS 14+ | `cd mac && scripts/build_app.sh` |
+| [`windows/`](windows) | Tauri 2 (Rust + WebView2), Windows 10/11 | `cd windows && npm install && npx tauri build` |
+
+A build you make yourself won't update itself; updates only go to the signed builds from the site.
+
 ## Privacy
 
 No server, no account. Everything stays on your computer. It never reads your chats, your screen, your keystrokes or your files' contents.
@@ -52,6 +63,6 @@ Free · macOS 14+ (Apple Silicon and Intel) · Windows 10/11 (64-bit)
 
 If Meowly makes your day a little nicer, a ⭐ helps others find it.
 
-<sub>The source code is not public; this repository holds releases, documentation and issues.</sub>
+<sub>Source code is open under GPL-3.0; use Issues for bugs and ideas.</sub>
 
 </div>

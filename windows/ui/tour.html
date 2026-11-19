@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Meowly</title>
+<link rel="stylesheet" href="tonti.css">
+<style>
+  /* Mac: Tonti/Tour.swift → TourCard. Pencere 344×246, kart 316×218 ortada; gölge 4 pt yalnızca zemine; ok kenarda. */
+  html, body { width: 344px; height: 246px; margin: 0; overflow: hidden; background: transparent !important; }
+  .card { position: absolute; left: 14px; top: 14px; width: 316px; height: 218px; box-sizing: border-box; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px; color: var(--ink); filter: drop-shadow(4px 4px 0 var(--shadow)); }
+  .card > * { position: relative; }
+  .hd { display: flex; align-items: flex-end; gap: 12px; }
+  .hd img { height: 52px; }
+  .hd b { font-size: 14px; font-weight: 700; line-height: 1.25; }
+  .bd { font-size: 11px; color: var(--sub); line-height: 1.4; }
+  .sp { flex: 1; }
+  .ft { display: flex; align-items: center; gap: 8px; }
+  .dots { display: flex; gap: 5px; align-items: center; }
+  .dots i { display: block; width: 7px; height: 7px; background: var(--line); }
+  .dots i.on { width: 14px; background: var(--pink); }
+  .skip { font: 700 10.5px var(--mono); color: var(--sub); background: none; border: 0; cursor: pointer; padding: 0 4px; }
+  #arrow { position: absolute; z-index: 3; }
+  #arrow i { position: absolute; display: block; }
+</style>
+</head>
+<body>
+<div class="card px" id="card">
+  <div class="hd"><img class="px-img" id="art" src="img/cat/content.png" alt=""><b id="title"></b></div>
+  <div class="bd" id="body"></div>
+  <div class="sp"></div>
+  <div class="ft"><div class="dots" id="dots"></div><span class="spacer" style="flex:1"></span>
+    <button class="skip" id="skip"></button><button class="btn px on" id="next"></button></div>
+</div>
+<div id="arrow"></div>
+<script src="common.js"></script>
+<script>
+  // Basamaklı (piksel) ok: 6 sıra × 2 px; dış sıra mürekkep, iç kısım kart rengi (Mac: PixelArrow).
+  function drawArrow(dir, at) {
+    const a = document.getElementById("arrow");
+    a.innerHTML = "";
+    if (dir === "none") return;
+    const rows = 6, cell = 2, vert = dir === "up" || dir === "down";
+    const W = vert ? 26 : 12, H = vert ? 12 : 26;
+    a.style.width = W + "px"; a.style.height = H + "px";
+    if (dir === "up") { a.style.left = (at - W / 2) + "px"; a.style.top = "3px"; }
+    if (dir === "down") { a.style.left = (at - W / 2) + "px"; a.style.top = (246 - 3 - H) + "px"; }
+    if (dir === "right") { a.style.left = (344 - 3 - W) + "px"; a.style.top = (at - H / 2) + "px"; }
+    if (dir === "left") { a.style.left = "3px"; a.style.top = (at - H / 2) + "px"; }
+    for (let i = 0; i < rows; i++) {
+      const w = (i * 2 + 2) * cell;
+      let r;
+      if (dir === "up") r = [(W - w) / 2, i * cell, w, cell];
+      else if (dir === "down") r = [(W - w) / 2, (rows - 1 - i) * cell, w, cell];
+      else if (dir === "right") r = [(rows - 1 - i) * cell, (H - w) / 2, cell, w];
+      else r = [i * cell, (H - w) / 2, cell, w];
+      const add = (x, y, ww, hh, c) => { const e = document.createElement("i"); Object.assign(e.style, { left: x + "px", top: y + "px", width: ww + "px", height: hh + "px", background: c }); a.appendChild(e); };
+      add(r[0], r[1], r[2], r[3], "var(--ink)");
+      if (i > 0) { if (vert) add(r[0] + 2, r[1], r[2] - 4, r[3], "var(--card)"); else add(r[0], r[1] + 2, r[2], r[3] - 4, "var(--card)"); }
+    }
+  }
+  function show(c) {
+    if (!c) return;
+    setTheme(c.dark);
+    document.getElementById("art").src = `img/cat/${c.art}.png`;
+    document.getElementById("title").textContent = c.title;
+    document.getElementById("body").textContent = c.body;
+    document.getElementById("dots").innerHTML = Array.from({ length: c.count }, (_, i) => `<i class="${i === c.index ? "on" : ""}"></i>`).join("");
+    const sk = document.getElementById("skip");
+    sk.textContent = c.skip; sk.style.display = c.index < c.count - 1 ? "" : "none";
+    document.getElementById("next").textContent = c.next;
+    drawArrow(c.arrow, c.at);
+  }
+  document.getElementById("next").addEventListener("click", () => invoke("tour_next"));
+  document.getElementById("skip").addEventListener("click", () => invoke("tour_skip"));
+  listen("meowly-tour", e => show(e.payload));
+  invoke("tour_card").then(show);
+</script>
+</body>
+</html>

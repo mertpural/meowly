@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Meowly</title>
+<link rel="stylesheet" href="tonti.css">
+<link rel="stylesheet" href="usage.css">
+<link rel="stylesheet" href="diary.css">
+<link rel="stylesheet" href="reports.css">
+<link rel="stylesheet" href="settings.css">
+<style>
+  /* Mac: Tonti/TontiUI.swift → TontiRoot (kenar çubuğu 214 pt, 2 pt mürekkep ayraç). */
+  html, body { height: 100%; }
+  body { display: flex; overflow: hidden; }
+  #side { width: 214px; flex: none; background: var(--side); padding: 24px 16px 16px; display: flex; flex-direction: column; gap: 4px; }
+  #sep { width: 2px; flex: none; background: var(--ink); }
+  #main { flex: 1; min-width: 0; padding-top: 14px; overflow-y: auto; background: var(--paper); }
+  .brand { display: flex; align-items: center; gap: 10px; padding-bottom: 18px; }
+  .brand img { height: 44px; }
+  .brand b { display: block; font-size: 15px; font-weight: 700; }
+  .brand small { display: block; font-size: 9.5px; color: var(--sub); margin-top: 1px; }
+  .nav { display: flex; flex-direction: column; gap: 4px; }
+  .nav a { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.6px; color: var(--sub); text-decoration: none; cursor: pointer; --stroke: transparent; --fill: transparent; }
+  .nav a.on { color: var(--ink); --stroke: var(--ink); --fill: var(--card); }
+  .nav a .g { width: 16px; text-align: center; }
+  .mini { padding: 10px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; }
+  .mini .n { font-size: 9.5px; font-weight: 600; color: var(--sub); letter-spacing: 0.8px; }
+  .mini .r { display: flex; flex-direction: column; gap: 2px; }
+  .mini .r .h { display: flex; font-size: 10.5px; }
+  .mini .r .h b { margin-left: auto; }
+  .mini .bar { height: 9px; background: var(--card); box-shadow: inset 0 0 0 2px var(--ink); padding: 2px; }
+  .mini .bar i { display: block; height: 100%; }
+  /* Ayarlar */
+  .page-title { font-size: 20px; font-weight: 700; padding: 24px 24px 0; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 24px; }
+  /* ComingSoon */
+  .soon { height: calc(100% - 14px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+  .soon img { height: 70px; }
+  .soon b { font-size: 18px; }
+  .soon span { font-size: 12px; color: var(--sub); }
+  #main.noscroll { overflow: hidden; }
+</style>
+</head>
+<body>
+<aside id="side"></aside>
+<div id="sep"></div>
+<main id="main"></main>
+<script src="common.js"></script>
+<script src="usage.js"></script>
+<script src="diary.js"></script>
+<script src="reports.js"></script>
+<script src="settings.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

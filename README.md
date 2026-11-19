@@ -54,6 +54,17 @@ Bir yıllık token kullanımın profil README'nde. Kareler servise göre renklen
 </picture>
 </a>
 
+## Kaynak kodu
+
+Meowly açık kaynaktır: kod [GPL-3.0](LICENSE) ile lisanslıdır. Kedinin çizimleri, "Meowly" adı ve logosu bu lisansa dahil değildir ([ASSETS-LICENSE.md](ASSETS-LICENSE.md)).
+
+| Klasör | İçerik | Derlemek |
+|---|---|---|
+| [`mac/`](mac) | Swift / SwiftUI, macOS 14+ | `cd mac && scripts/build_app.sh` |
+| [`windows/`](windows) | Tauri 2 (Rust + WebView2), Windows 10/11 | `cd windows && npm install && npx tauri build` |
+
+Kendin derlediğin sürüm kendini güncellemez; güncellemeler yalnızca sitedeki imzalı sürümlere gelir.
+
 ## Gizlilik
 
 Sunucu yok, hesap yok. Her şey kendi bilgisayarında kalır. Sohbetlerini, ekranını, bastığın tuşları ve dosyalarının içeriğini asla okumaz.
@@ -66,6 +77,6 @@ Sunucu yok, hesap yok. Her şey kendi bilgisayarında kalır. Sohbetlerini, ekra
 
 Meowly gününü biraz güzelleştiriyorsa bir ⭐ başkalarının da bulmasına yardım eder.
 
-<sub>Kaynak kodu herkese açık değildir; bu depo sürümleri, belgeleri ve hata bildirimlerini tutar.</sub>
+<sub>Kaynak kodu GPL-3.0 ile açık; hata bildirimleri ve öneriler için Issues.</sub>
 
 </div>

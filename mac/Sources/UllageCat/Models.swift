@@ -1,0 +1,493 @@
+import SwiftUI
+import AppKit
+
+enum Provider: String, CaseIterable, Identifiable {
+    case claude, codex, gemini, antigravity
+    case opencode, kimi, cline   // ek araçlar: yalnızca bilgisayarda izi varsa görünür (ExtraProviders)
+    var id: String { rawValue }
+
+    /// Çekirdek dört servis her zaman; ek araçlar yalnızca verisi bulunuyorsa.
+    static var allCases: [Provider] { core + ExtraProviders.present() }
+    static let core: [Provider] = [.claude, .codex, .gemini, .antigravity]
+    static let every: [Provider] = core + ExtraProviders.all
+
+    var name: String {
+        switch self {
+        case .claude: "Claude"
+        case .codex: "Codex"
+        case .gemini: "Gemini"
+        case .antigravity: "Antigravity"
+        case .opencode: "OpenCode"
+        case .kimi: "Kimi"
+        case .cline: "Cline"
+        }
+    }
+
+    var letter: String {
+        switch self {
+        case .claude: "C"
+        case .codex: "X"
+        case .gemini: "G"
+        case .antigravity: "A"
+        case .opencode: "O"
+        case .kimi: "K"
+        case .cline: "L"
+        }
+    }
+
+    var brandColor: Color {
+        switch self {
+        case .claude: Color(red: 0.85, green: 0.47, blue: 0.34)
+        case .codex: Color(red: 0.62, green: 0.63, blue: 0.66)
+        case .gemini: Color(red: 0.26, green: 0.52, blue: 0.96)
+        case .antigravity: Color(red: 0.16, green: 0.30, blue: 0.80)
+        case .opencode: Color(red: 0.30, green: 0.80, blue: 0.55)
+        case .kimi: Color(red: 0.52, green: 0.36, blue: 0.92)
+        case .cline: Color(red: 0.95, green: 0.75, blue: 0.25)
+        }
+    }
+
+    /// Grafik ve dağılımlarda kullanılan, Tonti paletine uyumlu sakin tonlar (logolar marka rengini korur).
+    var tontiColor: Color {
+        switch self {
+        case .claude: TC.dark ? Color(red: 0.93, green: 0.55, blue: 0.38) : Color(red: 0.85, green: 0.47, blue: 0.31)   // turuncu
+        case .codex: TC.dark ? Color(white: 0.72) : Color(red: 0.32, green: 0.30, blue: 0.33)
+        case .gemini: Color(red: 0.47, green: 0.62, blue: 0.84)
+        case .antigravity: TC.dark ? Color(red: 0.42, green: 0.53, blue: 0.88) : Color(red: 0.20, green: 0.29, blue: 0.62)   // lacivert
+        case .opencode: Color(red: 0.47, green: 0.72, blue: 0.56)
+        case .kimi: Color(red: 0.64, green: 0.53, blue: 0.84)
+        case .cline: Color(red: 0.86, green: 0.76, blue: 0.40)
+        }
+    }
+
+    /// Sıra: kullanıcının kendi PNG'si, uygulamaya gömülü resmi logo (lobehub/icons), kurulu uygulamanın ikonu.
+    var icon: NSImage? {
+        let custom = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/UllageCat/Logos/\(rawValue).png")
+        if let img = NSImage(contentsOf: custom) { return img }
+        if let url = Bundle.main.url(forResource: rawValue, withExtension: "png", subdirectory: "Logos"),
+           let img = NSImage(contentsOf: url) { return img }
+        let apps: [String]
+        switch self {
+        case .claude: apps = ["/Applications/Claude.app"]
+        case .codex: apps = ["/Applications/Codex.app", "/Applications/ChatGPT.app"]
+        case .gemini: apps = []
+        case .antigravity: apps = ["/Applications/Antigravity IDE.app", "/Applications/Antigravity.app"]
+        case .opencode, .kimi, .cline: apps = []
+        }
+        for path in apps where FileManager.default.fileExists(atPath: path) {
+            return NSWorkspace.shared.icon(forFile: path)
+        }
+        return nil
+    }
+}
+
+enum Confidence {
+    case exact      // sağlayıcının kendi verisi ya da loglardan birebir
+    case estimate   // tahmin ya da çözümlenmiş alan eşlemesi
+    case none       // kaynak yok
+
+    var label: String {
+        switch self {
+        case .exact: "Kesin"
+        case .estimate: "Tahmini"
+        case .none: "Veri yok"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .exact: .green
+        case .estimate: .orange
+        case .none: .gray
+        }
+    }
+}
+
+struct LimitRow: Identifiable {
+    let id = UUID()
+    var title: String
+    var left: Double
+    var reset: Date?
+}
+
+struct Usage {
+    var fiveHourLeft: Double?      // 0...1
+    var weeklyLeft: Double?        // 0...1
+    var fiveHourReset: Date?
+    var weeklyReset: Date?
+    var extra: [LimitRow] = []     // 5 saatlik/haftalık dışındaki pencereler (günlük kota, model grupları)
+    var todayTokens: Int?
+    /// Limit değeri güncellenemediyse en son alındığı zaman (eski değer gösteriliyor demektir).
+    var staleSince: Date?
+    var authExpired = false
+    var limitConfidence: Confidence = .none
+    var tokenConfidence: Confidence = .none
+    var notes: [String] = []
+
+    static func loading() -> Usage { Usage(notes: ["Okunuyor…"]) }
+
+    /// 5 saatlik pencerelerden en kısıtlayıcı olan (havuzlar varsa en düşüğü).
+    var fiveRow: LimitRow? {
+        if let l = fiveHourLeft { return LimitRow(title: "5 saatlik", left: l, reset: fiveHourReset) }
+        return extra.filter { $0.title.contains("5 saatlik") }.min { $0.left < $1.left }
+    }
+
+    var weekRow: LimitRow? {
+        if let l = weeklyLeft { return LimitRow(title: "Haftalık", left: l, reset: weeklyReset) }
+        return extra.filter { $0.title.contains("Haftalık") }.min { $0.left < $1.left }
+    }
+
+    /// 5 saatlik ya da haftalık olmayan pencereler (ör. Gemini günlük kota).
+    var otherRows: [LimitRow] {
+        extra.filter { !$0.title.contains("5 saatlik") && !$0.title.contains("Haftalık") }
+    }
+
+    /// Kartta ve çubukta gösterilecek tüm pencereler.
+    var rows: [LimitRow] {
+        if !extra.isEmpty { return extra }
+        var r: [LimitRow] = []
+        if let l = fiveHourLeft { r.append(LimitRow(title: "5 saatlik", left: l, reset: fiveHourReset)) }
+        if let l = weeklyLeft { r.append(LimitRow(title: "Haftalık", left: l, reset: weeklyReset)) }
+        return r
+    }
+}
+
+@MainActor
+final class AppState: ObservableObject {
+    @Published var enabled: Set<Provider> {
+        didSet { UserDefaults.standard.set(enabled.map(\.rawValue), forKey: "enabled") }
+    }
+    @Published var statusMessage = ""
+    @Published var selectedTab: String = UserDefaults.standard.string(forKey: "selectedTab") ?? "all" {
+        didSet {
+            UserDefaults.standard.set(selectedTab, forKey: "selectedTab")
+        }
+    }
+    @Published var notificationsOn: Bool = UserDefaults.standard.object(forKey: "notificationsOn") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(notificationsOn, forKey: "notificationsOn")
+            if notificationsOn { Notifier.requestAuthorization() }
+        }
+    }
+    /// Claude Code oturumu bitmişse, Claude Code'a kendini yenilettir (aksi hâlde limit değeri eski kalır).
+    @Published var refreshLogin: Bool = UserDefaults.standard.object(forKey: "refreshLogin") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(refreshLogin, forKey: "refreshLogin") }
+    }
+    @Published var starterOn: Bool = UserDefaults.standard.bool(forKey: "starterOn") {
+        didSet { UserDefaults.standard.set(starterOn, forKey: "starterOn") }
+    }
+    @Published var starterStatus = ""
+    /// Kartlarda "Bu hızla biter" ve "Sonraki otomatik mesaj" notları.
+    @Published var showForecast: Bool = UserDefaults.standard.object(forKey: "showForecast") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showForecast, forKey: "showForecast") }
+    }
+    @Published var showNextStart: Bool = UserDefaults.standard.object(forKey: "showNextStart") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showNextStart, forKey: "showNextStart") }
+    }
+    /// "system", "tr" ya da "en"; değişince tüm görünümler yeniden çizilir.
+    @Published var language: String = UserDefaults.standard.string(forKey: "language") ?? "system" {
+        didSet {
+            UserDefaults.standard.set(language, forKey: "language")
+            applyThemeIcon()
+        }
+    }
+    /// Token toplamlarına cache okumalarını da kat (her yerde geçerli; seçim kalıcıdır).
+    @Published var includeCache: Bool = UserDefaults.standard.bool(forKey: "includeCache") {
+        didSet {
+            UserDefaults.standard.set(includeCache, forKey: "includeCache")
+            refresh()
+        }
+    }
+    /// Limiti Claude Code'un durum satırından okur (ağ gerekmez). Açılınca Claude Code ayarlarına küçük bir betik eklenir.
+    @Published var statusLineOn: Bool = UserDefaults.standard.bool(forKey: "statusLineOn") {
+        didSet {
+            UserDefaults.standard.set(statusLineOn, forKey: "statusLineOn")
+            if statusLineOn { statusLineMessage = StatusLine.install() ?? "" } else { StatusLine.uninstall(); statusLineMessage = "" }
+        }
+    }
+    @Published var statusLineMessage = ""
+    /// Limit alınamazsa Claude Code komutuyla ölç (tek satırlık küçük bir Haiku isteği; yalnızca yeni kullanım olunca, 5 dakikada bir).
+    @Published var cliProbe: Bool = UserDefaults.standard.object(forKey: "cliProbe") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(cliProbe, forKey: "cliProbe") }
+    }
+    var starterTimer: Timer?
+    @Published var starterFireAt: Date?
+    @Published var weeklySummaryOn: Bool = UserDefaults.standard.object(forKey: "weeklySummaryOn") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(weeklySummaryOn, forKey: "weeklySummaryOn") }
+    }
+    @Published var launchAtLogin = LoginItem.enabled
+    @Published var themeId: String = UserDefaults.standard.string(forKey: "themeId") ?? "system" {
+        didSet {
+            UserDefaults.standard.set(themeId, forKey: "themeId")
+            applyThemeIcon()
+        }
+    }
+    @Published var showFive: Bool = UserDefaults.standard.object(forKey: "showFive") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showFive, forKey: "showFive") }
+    }
+    @Published var showWeek: Bool = UserDefaults.standard.object(forKey: "showWeek") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showWeek, forKey: "showWeek") }
+    }
+    @Published var showTags: Bool = UserDefaults.standard.object(forKey: "showTags") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showTags, forKey: "showTags") }
+    }
+    @Published var styleFive: MetricStyle = MetricStyle(rawValue: UserDefaults.standard.string(forKey: "styleFive") ?? "") ?? .percent {
+        didSet { UserDefaults.standard.set(styleFive.rawValue, forKey: "styleFive") }
+    }
+    @Published var styleWeek: MetricStyle = MetricStyle(rawValue: UserDefaults.standard.string(forKey: "styleWeek") ?? "") ?? .percent {
+        didSet { UserDefaults.standard.set(styleWeek.rawValue, forKey: "styleWeek") }
+    }
+    /// Arka plan yenileme aralığı (saniye). 0 = yalnızca elle.
+    @Published var refreshInterval: Int = UserDefaults.standard.object(forKey: "refreshInterval") as? Int ?? 30 {
+        didSet {
+            UserDefaults.standard.set(refreshInterval, forKey: "refreshInterval")
+            restartTimer()
+        }
+    }
+    @Published var daily: [Provider: [Int]] = [:]
+    @Published var dashPage = "history"
+    /// Raporlar sayfasını dışarıdan (kediden) belli bir dönemle yeniden açmak için.
+    @Published var reportsToken = 0
+    @Published var updatedAt: Date?
+    @Published var syncing = false
+
+    var theme: Theme { .tonti(dark: tontiDark) }   // yalnızca açık ya da koyu
+    @Published var tontiDark: Bool = UserDefaults.standard.bool(forKey: "tontiDark") {
+        didSet { UserDefaults.standard.set(tontiDark, forKey: "tontiDark"); applyThemeIcon(); DashboardWindow.applyAppearance(dark: tontiDark); CatController.shared.refreshBox() }
+    }
+
+    /// Uygulama ikonunu (Dock, uygulama değiştirici, bildirimler) temanın logosuyla anında değiştirir.
+    func applyThemeIcon() {
+        // Simge paketteki AppIcon (Tonti); temaya göre değişmez.
+    }
+    @Published var usage: [Provider: Usage] = Dictionary(
+        uniqueKeysWithValues: Provider.every.map { ($0, Usage.loading()) }
+    )
+
+    init() {
+        let saved = UserDefaults.standard.stringArray(forKey: "enabled")
+        enabled = saved.map { Set($0.compactMap(Provider.init(rawValue:))) }
+            ?? [.claude, .codex, .antigravity]
+        Notifier.onOpen = { [weak self] page in self?.openDashboard(page) }
+        if notificationsOn { Notifier.requestAuthorization() }
+        startRefreshing()
+        // Masaüstü kedisi (test modlarında açılmaz)
+        let env = ProcessInfo.processInfo.environment
+        if env["AILIMIT_DUMP"] == nil && env["AILIMIT_THEMES"] == nil && env["AILIMIT_SNAPSHOT"] == nil && env["AILIMIT_EXTRATEST"] == nil && env["AILIMIT_UPDATETEST"] == nil {
+            // Kutu simgesi hemen eklenir: menü çubuğunda limit göstergesinin sağında dursun.
+            if Thread.isMainThread { MainActor.assumeIsolated { MenuBarController.shared.install(self) } }
+            // Bilgisayar günlüğü (kedi gizli ya da kutudayken de çalışır).
+            if Thread.isMainThread { MainActor.assumeIsolated { ComputerLog.shared.start() } }
+            DispatchQueue.main.async { MainActor.assumeIsolated { CatController.shared.attach(self) } }
+        }
+        UpdateModel.shared.checkIfDue()
+        DispatchQueue.main.async { self.applyThemeIcon() }
+        if statusLineOn && !StatusLine.installed { statusLineMessage = StatusLine.install() ?? "" }
+        if !UserDefaults.standard.bool(forKey: "onboardingDone") {
+            UserDefaults.standard.set(true, forKey: "onboardingDone")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8) { self.openDashboard("providers") }
+        }
+        if ProcessInfo.processInfo.environment["AILIMIT_EXTRATEST"] != nil {
+            let oc = #"{"id":"msg_1","role":"assistant","modelID":"gpt-5","time":{"created":1794400000000},"tokens":{"input":100,"output":50,"reasoning":10,"cache":{"read":300,"write":20}}}"#
+            let ocUser = #"{"id":"msg_0","role":"user","time":{"created":1794400000000}}"#
+            let kimi = "{\"timestamp\":1794400100.5,\"message\":{\"type\":\"StatusUpdate\",\"payload\":{\"token_usage\":{\"input_other\":200,\"output\":40,\"input_cache_read\":500,\"input_cache_creation\":30}}}}\n{\"timestamp\":1794400200,\"message\":{\"type\":\"TurnBegin\"}}\n{\"message\":{\"payload\":{\"token_usage\":{\"input_other\":0,\"output\":0}}}}\n"
+            let inner = #"{\"tokensIn\":70,\"tokensOut\":30,\"cacheWrites\":5,\"cacheReads\":60,\"cost\":0.01}"#
+            let cline = "[{\"ts\":1794400300000,\"type\":\"say\",\"say\":\"text\",\"text\":\"hi\"},{\"ts\":1794400400000,\"type\":\"say\",\"say\":\"api_req_started\",\"text\":\"" + inner + "\"}]"
+            print("opencode:", ExtraProviders.parseOpenCode(Data(oc.utf8), name: "msg_1.json").map { "\($0.model) in=\($0.input) out=\($0.output) cw=\($0.cacheWrite) cr=\($0.cacheRead) ts=\($0.ts)" })
+            print("opencode user:", ExtraProviders.parseOpenCode(Data(ocUser.utf8), name: "msg_0.json").count)
+            print("kimi:", ExtraProviders.parseKimi(Data(kimi.utf8), path: "/x/wire.jsonl", fallback: 5).map { "in=\($0.input) out=\($0.output) cw=\($0.cacheWrite) cr=\($0.cacheRead) ts=\($0.ts) key=\($0.key)" })
+            print("cline:", ExtraProviders.parseCline(Data(cline.utf8), task: "t1", roo: false).map { "\($0.model) in=\($0.input) out=\($0.output) cw=\($0.cacheWrite) cr=\($0.cacheRead) key=\($0.key)" })
+            print("garbage:", ExtraProviders.parseCline(Data("nope".utf8), task: "t", roo: true).count, ExtraProviders.parseKimi(Data("{{{\n".utf8), path: "p", fallback: 1).count, ExtraProviders.parseOpenCode(Data("[]".utf8), name: "x").count)
+            print("allCases:", Provider.allCases.map(\.rawValue))
+            fflush(stdout); exit(0)
+        }
+        if ProcessInfo.processInfo.environment["AILIMIT_UPDATETEST"] != nil {
+            Task { @MainActor in
+                let u = UpdateModel.shared
+                await u.check(manual: true)
+                print("UPDATETEST check:", u.status, u.available?.version ?? "-"); fflush(stdout)
+                if u.available != nil { await u.install(); print("UPDATETEST install:", u.status); fflush(stdout) }
+                try? await Task.sleep(nanoseconds: 4_000_000_000)
+                if ProcessInfo.processInfo.environment["AILIMIT_UPDATETEST"] == "check" { fflush(stdout); exit(0) }
+            }
+        }
+        if ProcessInfo.processInfo.environment["AILIMIT_GHTEST"] != nil {
+            Task { let r = await GitHubSync.push(force: true); print("GHTEST:", r); exit(0) }
+        }
+        if let out = ProcessInfo.processInfo.environment["AILIMIT_PROFILECARD"] {
+            try? ProfileCard.svg(split: GitHubSync.split, dark: GitHubSync.dark).write(toFile: out, atomically: true, encoding: .utf8)
+        }
+        if let page = ProcessInfo.processInfo.environment["AILIMIT_OPEN"] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6) { self.openDashboard(page) }
+        }
+    }
+
+    private var timer: Timer?
+
+    func startRefreshing() {
+        refresh()
+        restartTimer()
+    }
+
+    private func restartTimer() {
+        timer?.invalidate()
+        timer = nil
+        guard refreshInterval > 0 else { return }
+        timer = Timer.scheduledTimer(withTimeInterval: TimeInterval(refreshInterval), repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.refresh() }
+        }
+    }
+
+    /// `force`: elle yenilemede ağ önbelleklerini (30 saniyeden eskilerse) atlar; hız sınırına takılmamak için
+    /// 30 saniyeden sık sorgu yapılmaz.
+    func refresh(force: Bool = false) {
+        // Uygulama günlerce açık kalsa da güncelleme günde bir kez denetlensin (kendi içinde 20 saatte bir sınırlı).
+        UpdateModel.shared.checkIfDue()
+        if force {
+            ClaudeLimitAPI.invalidate()
+            GeminiProvider.invalidate()
+        }
+        syncing = true
+        Task.detached {
+            let codex = CodexProvider.read()
+            async let antiTask = AntigravityProvider.read()
+            async let geminiTask = GeminiProvider.read()
+            let claude = await ClaudeProvider.read()
+            let anti = await antiTask
+            let gemini = await geminiTask
+            var daily: [Provider: [Int]] = [:]
+            var extras: [Provider: Usage] = [:]
+            for p in ExtraProviders.present(force: true) { extras[p] = ExtraProviders.read(p) }
+            for p in Provider.allCases { daily[p] = HistoryStore.shared.dailyTotals(provider: p.rawValue, days: 7) }
+            await MainActor.run {
+                self.daily = daily
+                self.updatedAt = Date()
+                self.syncing = false
+                let old = self.usage
+                self.usage[.claude] = claude
+                self.usage[.codex] = codex
+                self.usage[.antigravity] = anti
+                self.usage[.gemini] = gemini
+                for (p, u) in extras { self.usage[p] = u }
+                if self.notificationsOn { Notifier.check(old: old, new: self.usage) }
+                self.scheduleStarter(claude)
+                if self.weeklySummaryOn && self.notificationsOn { WeeklySummary.sendIfDue() }
+                if GitHubSync.enabled { Task.detached { await GitHubSync.syncIfDue() } }
+            }
+        }
+    }
+
+    /// Açık menü çubuğu penceresini içeriğin ideal boyuna getirir; üst kenar sabit kalır.
+    @MainActor static func fitPopover() {
+        guard let w = NSApp.keyWindow, w.level != .normal, let view = w.contentView else { return }
+        let size = view.fittingSize
+        guard size.height > 40, abs(size.height - w.contentLayoutRect.height) > 1 else { return }
+        var frame = w.frame
+        let newH = size.height + (frame.height - w.contentLayoutRect.height)
+        frame.origin.y += frame.height - newH
+        frame.size.height = newH
+        w.setFrame(frame, display: true, animate: false)
+    }
+
+    func openDashboard(_ page: String? = nil) {
+        if let page { dashPage = page }
+        MenuBarController.shared.closePopover()
+        DashboardWindow.show(state: self)
+    }
+
+    private static let dayTime: DateFormatter = {
+        let f = DateFormatter(); f.locale = L.locale; f.dateFormat = "EEE HH:mm"; return f
+    }()
+    private static let clock: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "HH:mm"; return f
+    }()
+
+    /// Saati bugünse yalnızca "HH:mm", değilse gün kısaltmasıyla yazar.
+    static func whenText(_ d: Date) -> String {
+        Calendar.current.isDateInToday(d) ? clock.string(from: d) : dayTime.string(from: d)
+    }
+
+    /// Kartın altında gösterilen kısa notlar: limitin ne zaman biteceği ve sonraki otomatik mesaj.
+    func footnotes(_ p: Provider, _ u: Usage) -> [String] {
+        var out: [String] = []
+        if showForecast, u.staleSince == nil {
+            var parts: [String] = []
+            if let f = u.fiveRow, let at = Pace.exhaustion(f, window: 5 * 3600) { parts.append(L.f("5 saatlik %@", Self.whenText(at))) }
+            if let w = u.weekRow, let at = Pace.exhaustion(w, window: 7 * 86400) { parts.append(L.f("haftalık %@", Self.whenText(at))) }
+            if !parts.isEmpty { out.append(L.t("Bu hızla biter: ") + parts.joined(separator: ", ")) }
+        }
+        if showNextStart, p == .claude, starterOn, let at = starterFireAt { out.append(L.f("Sonraki otomatik mesaj: %@", Self.whenText(at))) }
+        return out
+    }
+
+    /// Sıfırlanma saatine tek seferlik zamanlayıcı kurar; her yenilemede yalnızca saat değiştiyse yeniden kurulur.
+    /// Sıfırlanma çoktan geçmişse (uygulama geç açıldıysa) bir kez hemen dener.
+    @MainActor func scheduleStarter(_ claude: Usage) {
+        guard starterOn else { starterTimer?.invalidate(); starterTimer = nil; starterFireAt = nil; return }
+        let now = Date()
+        if let at = WindowStarter.nextFire(claude, now: now) {
+            if let cur = starterFireAt, abs(cur.timeIntervalSince(at)) < 60, starterTimer?.isValid == true { return }
+            starterTimer?.invalidate()
+            starterFireAt = at
+            starterTimer = Timer.scheduledTimer(withTimeInterval: max(1, at.timeIntervalSince(now)), repeats: false) { [weak self] _ in
+                Task { @MainActor in
+                    self?.starterTimer = nil
+                    self?.starterFireAt = nil
+                    self?.startWindow()
+                }
+            }
+            starterTimer?.tolerance = 5
+        } else if starterTimer == nil, WindowStarter.shouldStart(claude, now: now) {
+            startWindow()
+        }
+    }
+
+    /// Claude'un yeni 5 saatlik penceresini hemen başlatır.
+    func startWindow() {
+        starterStatus = L.t("Başlatılıyor…")
+        Task.detached {
+            let r = WindowStarter.ping()
+            await MainActor.run {
+                let f = DateFormatter(); f.timeStyle = .short
+                self.starterStatus = "\(f.string(from: Date())) · \(r.message)"
+                if r.ok { DispatchQueue.main.asyncAfter(deadline: .now() + 15) { self.refresh() } }
+            }
+        }
+    }
+
+    func setLaunchAtLogin(_ on: Bool) {
+        if let err = LoginItem.set(on) { statusMessage = "Girişte başlatma ayarlanamadı: \(err)" }
+        launchAtLogin = LoginItem.enabled
+    }
+
+    func binding(for p: Provider) -> Binding<Bool> {
+        Binding(
+            get: { self.enabled.contains(p) },
+            set: { on in
+                if on { self.enabled.insert(p) } else { self.enabled.remove(p) }
+            }
+        )
+    }
+
+    /// Menü çubuğunda gösterilen değer: 5 saatlik ve haftalıktan kısıtlayıcı olan; veri yoksa nil.
+    func tightest(_ p: Provider) -> Double? {
+        guard let u = usage[p] else { return nil }
+        return u.rows.map(\.left).min()
+    }
+}
+
+/// Tonti dili: yeterli hak mürekkep renginde, azalınca kehribar, bitmeye yakın pembe.
+func statusColor(_ left: Double) -> Color {
+    left > 0.4 ? TC.ink : (left > 0.15 ? TC.amber : TC.pink)
+}
+
+func formatRemaining(_ date: Date, now: Date = Date()) -> String {
+    let s = Int(date.timeIntervalSince(now))
+    if s <= 0 { return L.t("şimdi") }
+    let d = s / 86400, h = (s % 86400) / 3600, m = (s % 3600) / 60
+    let u = L.en ? ("d", "h", "m") : ("g", "s", "dk")
+    if d > 0 { return "\(d)\(u.0) \(h)\(u.1)" }
+    if h > 0 { return "\(h)\(u.1) \(m)\(u.2)" }
+    return "\(m)\(u.2)"
+}

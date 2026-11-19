@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Meowly'nin kendi sayfaları (açılır pencere, pano, ad istemi, tur kartı) yalnızca uygulama içi olayları dinleyip gönderebilir. Başka hiçbir çekirdek izni yok.",
+  "windows": ["popover", "dashboard", "prompt", "tour", "star"],
+  "permissions": ["core:event:default"]
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Meowly</title>
+<link rel="stylesheet" href="tonti.css">
+<style>
+  /* Mac: Views.swift → PopoverView (380 pt genişlik, 16 pt kenar boşluğu, 12 pt aralık). */
+  body { width: 380px; overflow: hidden; }
+  #root { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .head { gap: 8px; }
+  .head img { height: 26px; }
+  .head .name { font-size: 15px; font-weight: 700; }
+  .head .upd { font-size: 10px; color: var(--sub); }
+  .tabs { gap: 6px; }
+  .tabs .btn { font-size: 12px; font-weight: 600; height: 26px; }
+  .tabs .btn img { width: 16px; height: 16px; }
+  #content { display: flex; flex-direction: column; gap: 10px; max-height: 460px; overflow-y: auto; }
+  .ov { display: flex; flex-direction: column; gap: 10px; }
+  .ov .top { gap: 8px; }
+  .ov .top img { width: 22px; height: 22px; }
+  .ov .top .pname { font-size: 14px; font-weight: 600; }
+  .ov .top .today { font-size: 11px; color: var(--sub); }
+  .metrics { display: flex; gap: 14px; align-items: flex-start; }
+  .metric { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .metric .mh { display: flex; align-items: baseline; }
+  .metric .title { font-size: 9px; font-weight: 700; color: var(--sub); }
+  .metric .pct { font-size: 15px; font-weight: 700; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .metric .reset { font-size: 10px; color: var(--sub); white-space: nowrap; overflow: hidden; }
+  .note { font-size: 10px; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .warn { font-size: 10px; color: var(--amber); }
+  .empty { font-size: 12px; color: var(--sub); }
+  .bottom { gap: 8px; }
+  .bottom .btn { font-size: 11px; font-weight: 600; height: 26px; }
+  /* Sağlayıcı sayfası (ProviderDetail) */
+  .det-head { gap: 8px; }
+  .det-head img { width: 26px; height: 26px; }
+  .det-head .pname { font-size: 17px; font-weight: 700; }
+  .mcards { display: flex; gap: 10px; }
+  .mcard { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .mcard .mh { display: flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700; color: var(--sub); }
+  .chip { margin-left: auto; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 99px; }
+  .big { display: flex; align-items: baseline; gap: 4px; }
+  .big b { font-size: 30px; font-variant-numeric: tabular-nums; }
+  .big span { font-size: 11px; color: var(--sub); }
+  .mfoot { display: flex; align-items: center; font-size: 10px; font-weight: 500; color: var(--sub); }
+  /* Mac: ProviderDetail → HAVUZLAR/KOTALAR kartı (LimitBar). */
+  .pools { display: flex; flex-direction: column; gap: 8px; }
+  .pools .mh { font-size: 9px; font-weight: 700; color: var(--sub); }
+  .pools .lb { display: flex; flex-direction: column; gap: 3px; }
+  .pools .lb .t { font-size: 11px; }
+  .pools .lb b { font-size: 12px; }
+  .pools .lb .r { font-size: 9.5px; color: var(--sub); }
+  .tok { display: flex; flex-direction: column; gap: 8px; }
+  .tok .mh { display: flex; font-size: 9px; font-weight: 700; color: var(--sub); }
+  .tok .mh span:last-child { margin-left: auto; font-size: 10px; font-weight: 400; }
+  .tok .val b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+  .tok .val span { font-size: 10px; color: var(--sub); }
+  .bars { flex: 1; display: flex; align-items: flex-end; gap: 4px; height: 34px; }
+  .bars i { flex: 1; display: block; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="common.js"></script>
+<script src="popover.js"></script>
+</body>
+</html>

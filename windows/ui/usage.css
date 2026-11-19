@@ -1,0 +1,83 @@
+/* Kullanım sayfası ölçüleri (Mac: HistoryView.swift; LegacyScroll padding 24, aralık 16). */
+.usage { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.ptitle { display: flex; flex-direction: column; gap: 3px; }
+.ptitle b { font-size: 20px; }
+.ptitle span { font-size: 11px; color: var(--sub); }
+.u-row { display: flex; gap: 12px; }
+.u-row > * { flex: 1; min-width: 0; }
+.u-stat { padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.u-stat .t { font-size: 10px; font-weight: 700; color: var(--sub); }
+.u-stat b { font-size: 26px; font-variant-numeric: tabular-nums; }
+.u-stat .c { font-size: 10px; white-space: nowrap; overflow: hidden; }
+.u-stat .arrow { font-size: 9px; }
+.u-card { padding: 14px; }
+.u-card.big, .u-card.heat { padding: 16px; }
+.cost { display: flex; align-items: center; gap: 22px; }
+.cost .cl { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.cost .t, .proj .t { font-size: 10px; font-weight: 700; color: var(--sub); }
+.cost .sub { font-size: 10px; }
+.cost .cv { display: flex; flex-direction: column; align-items: flex-end; }
+.cost .cv b { font-size: 18px; font-variant-numeric: tabular-nums; }
+.cost .cv span { font-size: 10px; color: var(--sub); }
+.proj { display: flex; flex-direction: column; gap: 8px; }
+.proj .ph { gap: 8px; }
+.proj .ph .sub { font-size: 10px; }
+.seg { display: inline-flex; gap: 8px; }
+.prow { display: flex; align-items: center; gap: 10px; }
+.prow .pn { width: 150px; font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prow .pb { flex: 1; height: 8px; }
+.prow .pb i { display: block; height: 100%; }
+.prow .pt { width: 52px; text-align: right; font-size: 11px; font-variant-numeric: tabular-nums; }
+.prow .pc { width: 56px; text-align: right; font-size: 10px; color: var(--sub); font-variant-numeric: tabular-nums; }
+.u-stat2 { padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.u-stat2 .h { display: flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 700; color: var(--sub); }
+.u-stat2 .h i { color: var(--accent); font-style: normal; font-size: 10px; display: inline-flex; }
+.u-stat2 .h i svg { width: 10px; height: 10px; }
+.u-stat2 b { font-size: 20px; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.u-stat2 .s { font-size: 10px; color: var(--sub); white-space: nowrap; overflow: hidden; }
+.btn.pill { font-size: 11px; font-weight: 500; }
+.btn.pill img { width: 14px; height: 14px; }
+/* Isı haritası: her ölçü kare boyutu cinsinden (53 hafta + 2,4 etiket genişliği, 0,25 aralık). */
+.heat { display: flex; flex-direction: column; gap: 10px; container-type: inline-size; }
+.heat .hh { gap: 8px; }
+.heat .hh b { font-size: 13px; font-weight: 600; }
+.heat .hh .sub { font-size: 11px; }
+.hgrid { --cell: calc((100cqw) / 68.4); --gap: calc(var(--cell) * 0.25); --lw: calc(var(--cell) * 2.4); }
+.hgrid .months { position: relative; height: calc(var(--cell) * 1.4); }
+.hgrid .months span { position: absolute; top: 0; font-size: 9px; color: var(--sub); }
+.hbody { display: flex; }
+.hbody .days { width: var(--lw); flex: none; display: flex; flex-direction: column; gap: var(--gap); }
+.hbody .days span { height: var(--cell); font-size: 9px; color: var(--sub); line-height: var(--cell); }
+.hcols { display: flex; gap: var(--gap); }
+.hcol { display: flex; flex-direction: column; gap: var(--gap); }
+.hc { display: flex; flex-direction: column; width: var(--cell); height: var(--cell); }
+.hc.empty { background: transparent; }
+.hc.split { background: transparent; }
+.hc.split i { display: block; width: 100%; }
+.hc.hov { outline: 1.5px solid color-mix(in srgb, var(--ink) 90%, transparent); outline-offset: -1px; }
+.heat .hf .readout { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.heat .legend { display: flex; align-items: center; gap: 10px; font-size: 10px; color: var(--sub); }
+.heat .legend .lg { display: inline-flex; align-items: center; gap: 4px; }
+.heat .legend .lg i { width: 8px; height: 8px; display: inline-block; }
+.heat .legend .lv { width: 11px; height: 11px; display: inline-block; margin-left: -6px; }
+.ctl { gap: 26px; }
+.check { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; cursor: pointer; }
+.check i { width: 18px; height: 18px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--card); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sub) 75%, transparent); font-style: normal; font-size: 11px; font-weight: 700; color: #fff; }
+.check.on i { background: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.flt { gap: 6px; }
+.ch { margin-bottom: 10px; }
+.ch b, .ct { font-size: 13px; font-weight: 600; }
+.ch .sub { font-size: 12px; }
+.chart { width: 100%; height: 260px; display: block; }
+.chart .grid { stroke: color-mix(in srgb, var(--sub) 20%, transparent); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.chart text { font-family: var(--mono); font-size: 10px; fill: var(--sub); }
+.nodata { min-height: 240px; display: flex; align-items: center; justify-content: center; color: var(--sub); }
+.big .ct { display: block; margin-bottom: 10px; }
+.drow { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.drow .sq { width: 9px; height: 9px; flex: none; }
+.drow .dn { width: 170px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.drow .dbar { flex: 1; height: 6px; background: color-mix(in srgb, var(--sub) 18%, transparent); }
+.drow .dbar i { display: block; height: 100%; }
+.drow b { width: 64px; text-align: right; font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.drow .dp { width: 38px; text-align: right; font-size: 11px; color: var(--sub); }

@@ -1,0 +1,7 @@
+.DS_Store
+mac/.build/
+mac/build/
+windows/node_modules/
+windows/src-tauri/target/
+windows/src-tauri/gen/
+windows/release-out/
