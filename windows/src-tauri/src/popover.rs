@@ -273,7 +273,13 @@ pub fn compute_state() -> Value {
                     }));
                 }
                 if let Some(st) = u.and_then(|u| u.stale_since) {
-                    notes.push(l10n::f("Anthropic hız sınırı uyguladığı için son alınan değer gösteriliyor (%@); güncel olmayabilir.", &[look::when_text(st)]));
+                    // Hız sınırından yalnızca gerçekten bekleniyorsa söz edilir; çoğu zaman değer yalnızca bir sonraki ölçümü bekliyor.
+                    let waiting = crate::store::kv_f64("claudeBackoffUntil") > sense::now_secs();
+                    notes.push(if waiting {
+                        l10n::f("Anthropic hız sınırı uyguladığı için son alınan değer gösteriliyor (%@); güncel olmayabilir.", &[look::when_text(st)])
+                    } else {
+                        l10n::f("Limit en son %@ tarihinde ölçüldü; birkaç dakika içinde yeniden ölçülür.", &[look::when_text(st)])
+                    });
                 }
             }
             "codex" => {

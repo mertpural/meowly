@@ -34,7 +34,10 @@ enum ClaudeProvider {
                 let f = DateFormatter(); f.timeStyle = .short; f.dateStyle = age > 86400 ? .short : .none
                 u.limitConfidence = .estimate
                 u.staleSince = r.fetchedAt
-                u.notes.append(L.f("Anthropic hız sınırı uyguladığı için son alınan değer gösteriliyor (%@); güncel olmayabilir.", f.string(from: r.fetchedAt)))
+                // Hız sınırından yalnızca gerçekten bekleme varsa söz edilir; yoksa yalnızca ölçümün yaşı yazılır.
+                u.notes.append(ClaudeLimitAPI.backoffEnd != nil
+                    ? L.f("Anthropic hız sınırı uyguladığı için son alınan değer gösteriliyor (%@); güncel olmayabilir.", f.string(from: r.fetchedAt))
+                    : L.f("Limit en son %@ tarihinde ölçüldü; birkaç dakika içinde yeniden ölçülür.", f.string(from: r.fetchedAt)))
             }
         case .failure(let err):
             u.authExpired = CLIProbe.authExpired
