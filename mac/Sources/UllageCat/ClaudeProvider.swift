@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 /// Claude Code ve Claude Desktop (Code sekmesi) ~/.claude/projects altına yazar: token geçmişi oradan okunur.
 /// Gerçek 5 saatlik/haftalık yüzde yerelde yok; Anthropic'in kullanım uç noktasından, Claude Code'un
@@ -120,6 +121,8 @@ enum ClaudeLimitAPI {
     nonisolated(unsafe) private static var token: (value: String, expires: Date?)?
     nonisolated(unsafe) private static var keychainRetryAt = Date.distantPast
     nonisolated(unsafe) private static var cached: (at: Date, result: Result<ClaudeLimits, LimitError>)?
+    /// Kullanıcı elle yeniledi ("Senkronize et"): bir sonraki okumada kullanım adresi hemen sorulur.
+    nonisolated(unsafe) private static var manualPending = false
 
     /// Hız sınırı bekleme süresi uygulama yeniden başlatılınca da korunur (her açılışta tekrar sınıra çarpmamak için).
     nonisolated(unsafe) private static var backoffUntil = Date(timeIntervalSince1970: UserDefaults.standard.double(forKey: "claudeBackoffUntil"))
@@ -136,6 +139,7 @@ enum ClaudeLimitAPI {
     /// Elle yenilemede önbelleği atlar, ama 30 saniyeden sık sorgu yapılmaz (Anthropic hız sınırı).
     static func invalidate() {
         lock.lock(); defer { lock.unlock() }
+        manualPending = true
         // Elle yenileme de Claude için en sık dakikada bir gerçek sorgu yapar (senkron süresi ne olursa olsun).
         let last = UserDefaults.standard.double(forKey: lastAttemptKey)
         if Date().timeIntervalSince1970 - last > minInterval {
@@ -194,10 +198,38 @@ enum ClaudeLimitAPI {
             lock.lock(); store(f); lock.unlock()
             return .success(f)
         }
-        // Claude komutu varsa Anthropic'in sert sınırlı kullanım adresine hiç gidilmez (saatlerce 429 bekletiyordu);
-        // ölçümü CLIProbe yapar, aralarda son değer gösterilir.
+        // Claude komutu varsa ölçümü bu Mac'teki kullanımda CLIProbe yapar. Ama Claude telefonda ya da tarayıcıda
+        // kullanılınca burada iz kalmaz: kullanıcı başındaysa 15 dakikada bir kullanım adresinden okunur (limitten
+        // harcamaz). Elle yenilemede son denemeden 1 dk geçtiyse hemen. Hız sınırında (429) Retry-After kadar beklenir.
         if CLIProbe.available {
-            if let old = stored() { return .success(old) }
+            let now = Date()
+            lock.lock()
+            let manual = manualPending; manualPending = false
+            let waiting = now < backoffUntil
+            let old = stored()
+            lock.unlock()
+            let sinceTry = now.timeIntervalSince1970 - UserDefaults.standard.double(forKey: lastAttemptKey)
+            let userIdle = ProcessInfo.processInfo.environment["MEOWLY_USER_IDLE"].flatMap(Double.init)   // geliştirme
+                ?? CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: CGEventType(rawValue: ~0)!)
+            let due = manual
+                ? sinceTry > 60
+                : sinceTry >= 900 && (old.map { now.timeIntervalSince($0.fetchedAt) >= 900 } ?? true) && userIdle < 300
+            if due && !waiting {
+                UserDefaults.standard.set(now.timeIntervalSince1970, forKey: lastAttemptKey)
+                let r = await request(retryWithFreshToken: true)
+                lock.lock(); defer { lock.unlock() }
+                switch r {
+                case .success(let l):
+                    store(l)
+                    return .success(l)
+                case .failure(let e):
+                    if let ra = e.retryAfter {
+                        backoffUntil = Date().addingTimeInterval(max(300, ra))
+                        UserDefaults.standard.set(backoffUntil.timeIntervalSince1970, forKey: "claudeBackoffUntil")
+                    }
+                }
+            }
+            if let old { return .success(old) }
             return .failure(LimitError(message: L.t("Limit henüz ölçülmedi")))
         }
         lock.lock()

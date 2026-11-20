@@ -452,7 +452,7 @@ struct SyncPage: View {
 
         VStack(alignment: .leading, spacing: 8) {
             Text(L.t("Kaynak başına sınırlar")).font(t.font(13, .semibold))
-            Text(L.t("Claude limit yüzdesi: Anthropic'in kullanım bilgisi sınırlı olduğu için seçtiğin süre ne olursa olsun en sık 1 dakikada bir sorgulanır; hız sınırına takılırsa 5 dakika beklenir. Arada son alınan değer gösterilir, yenilenen pencereler hemen %100 olur."))
+            Text(L.t("Claude limit yüzdesi: Claude Code kuruluysa bu bilgisayarda Claude kullanırken onun komutuyla en sık 5 dakikada bir ölçülür. Kullanmasan da bilgisayar başındaysan 15 dakikada bir Anthropic'in kullanım adresinden okunur (Claude'u telefonda ya da tarayıcıda kullandıysan da güncel kalsın diye; bu okuma limitinden harcamaz). \"Senkronize et\" hemen okur. Claude Code yoksa adrese en sık 1 dakikada bir sorulur. Arada son alınan değer gösterilir, yenilenen pencereler hemen %100 olur."))
             Text(L.t("Gemini kotası: en sık 2 dakikada bir."))
             Text(L.t("Antigravity limiti: IDE açıksa her yenilemede yerel sunucudan okunur, kapalıysa okunamaz."))
             Text(L.t("Codex ve token geçmişi: yerel dosyalardan, her yenilemede."))
