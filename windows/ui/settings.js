@@ -197,6 +197,7 @@ function tabAbout(s) {
   const ubtn = a ? `<button class="btn px on" data-upd="install" ${SX.updBusy ? "disabled" : ""}>${esc(T.f("%@ sürümüne güncelle", a.version))}</button>`
     : `<button class="btn px" data-upd="check" ${SX.updBusy ? "disabled" : ""}>${T.t("Güncellemeleri denetle")}</button>`;
   out += `<div class="px scard2 upd"><div class="row"><b style="font-size:13px">${T.f("Sürüm %@", d.version)}</b><span class="spacer"></span>${ubtn}</div>
+    ${up.failed ? `<span class="snote" style="font-size:11px;color:var(--pink)">${esc(T.f("Son güncelleme (%@) kurulamadı. Siteden indirip kurabilirsin; ayarların ve kayıtların silinmez.", up.failed))}</span>` : ""}
     ${SX.updStatus ? `<span class="snote" style="font-size:11px">${esc(SX.updStatus)}</span>` : ""}
     ${a && a.notes ? `<span class="snote" style="font-size:11px">${esc(a.notes)}</span>` : ""}
     <div class="row" style="gap:16px"><div class="sl"><b style="font-size:12px">${T.t("Güncellemeleri kendiliğinden denetle")}</b><span>${T.t(TXT.update)}</span></div><span class="spacer"></span>${sw("update_check", s.update_check)}</div></div>`;

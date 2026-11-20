@@ -13,6 +13,35 @@ const FEED: &str = "https://meowly.vercel.app/latest-windows.json";
 const K_LAST: &str = "updateLastCheck";
 const K_AVAIL: &str = "updateAvailable";
 const K_NOTIFIED: &str = "updateNotified";
+/// Kurulumu başlatılan sürüm: bir sonraki açılışta gerçekten kurulmuş mu diye bakılır.
+const K_PENDING: &str = "updatePending";
+/// Kurulamayan sürüm (Hakkında'da uyarı).
+const K_FAILED: &str = "updateFailed";
+
+/// Güncelleme günlüğü: %APPDATA%\Meowly\update.log (en çok 64 KB). Yalnızca adımlar ve sürümler; kişisel bir şey yok.
+/// Kurulum programı da aynı dosyaya yazar (installer-hooks.nsh).
+pub fn log(s: impl AsRef<str>) {
+    use std::io::Write;
+    let p = settings::data_dir().join("update.log");
+    if std::fs::metadata(&p).map(|m| m.len() > 65536).unwrap_or(false) { let _ = std::fs::remove_file(&p); }
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(p) {
+        let (y, m, d, h, mi, _) = crate::look::local(crate::sense::now_secs());
+        let _ = writeln!(f, "{d:02}.{m:02}.{y} {h:02}:{mi:02} [{}] {}", current(), s.as_ref());
+    }
+}
+
+/// Ana süreç açılışta: başlatılan kurulum gerçekten yapıldı mı? Yapılmadıysa Hakkında'da uyarılır.
+pub fn check_pending() {
+    let Some(v) = store::kv_get(K_PENDING).filter(|v| !v.is_empty()) else { return };
+    store::kv_set(K_PENDING, "");
+    if is_newer(&v, current()) {
+        log(format!("{v} kurulamadı: uygulama hâlâ {}", current()));
+        store::kv_set(K_FAILED, &v);
+    } else {
+        log(format!("{v} kuruldu"));
+        store::kv_set(K_FAILED, "");
+    }
+}
 
 pub fn current() -> &'static str { env!("CARGO_PKG_VERSION") }
 
@@ -92,7 +121,8 @@ fn installed_dir() -> Option<PathBuf> {
 
 /// Hakkında kartı için durum.
 pub fn page_state() -> Value {
-    json!({ "available": available(), "installable": installed_dir().is_some() })
+    json!({ "available": available(), "installable": installed_dir().is_some(),
+            "failed": store::kv_get(K_FAILED).filter(|v| !v.is_empty() && is_newer(v, current())) })
 }
 
 /// "Güncellemeleri denetle" düğmesi.
@@ -155,6 +185,7 @@ fn exe_info(p: &std::path::Path) -> Option<(String, String)> {
 /// Başarılıysa None (uygulama kapanıyor), değilse kullanıcıya gösterilecek durum.
 pub fn install() -> String {
     let Some(info) = available() else { return l10n::t("Güncelsin") };
+    log(format!("{} kurulumu istendi", info["version"].as_str().unwrap_or("?")));
     if installed_dir().is_none() { return l10n::t("Uygulama bu konumda güncellenemiyor. Yeni sürümü siteden indir."); }
     let (Some(url), Some(want), Some(ver)) = (info["url"].as_str(), info["sha256"].as_str(), info["version"].as_str()) else {
         return l10n::t("Güncelleme bilgisi okunamadı");
@@ -177,11 +208,12 @@ pub fn install() -> String {
         Some(())
     })();
     let fail = |m: &str| { let _ = std::fs::remove_dir_all(&dir); l10n::t(m) };
-    if ok.is_none() { return fail("İndirilemedi"); }
-    if sha256_of(&file).as_deref() != Some(want) { return fail("İndirilen dosya doğrulanamadı (SHA-256 uyuşmuyor). Güncelleme yapılmadı."); }
+    if ok.is_none() { log("indirilemedi"); return fail("İndirilemedi"); }
+    log(format!("indirildi: {} bayt", std::fs::metadata(&file).map(|m| m.len()).unwrap_or(0)));
+    if sha256_of(&file).as_deref() != Some(want) { log("SHA-256 tutmadı"); return fail("İndirilen dosya doğrulanamadı (SHA-256 uyuşmuyor). Güncelleme yapılmadı."); }
     match exe_info(&file) {
         Some((name, v)) if name == "Meowly" && v == ver && is_newer(&v, current()) => {}
-        _ => return fail("Sürüm bilgisi tutmuyor. Güncelleme yapılmadı."),
+        other => { log(format!("sürüm bilgisi tutmadı: {other:?}")); return fail("Sürüm bilgisi tutmuyor. Güncelleme yapılmadı.") }
     }
     // Ana süreci düzgün kapat (tepsi simgesi, açık kayıt), sonra kurulumu başlat: /P pasif, /UPDATE güncelleme, /R kurulunca aç.
     crate::ipc::post_main(crate::ipc::WM_IPC_QUIT, 0);
@@ -189,9 +221,14 @@ pub fn install() -> String {
         if !crate::ipc::main_alive() { break; }
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
-    if std::process::Command::new(&file).args(["/P", "/UPDATE", "/R"]).spawn().is_err() {
+    log(format!("doğrulandı; ana süreç kapandı mı: {}", !crate::ipc::main_alive()));
+    store::kv_set(K_PENDING, ver);
+    if let Err(e) = std::process::Command::new(&file).args(["/P", "/UPDATE", "/R"]).spawn() {
+        log(format!("kurulum başlatılamadı: {e}"));
+        store::kv_set(K_PENDING, "");
         return fail("Güncelleme başarısız oldu");
     }
+    log("kurulum başlatıldı (/P /UPDATE /R)");
     String::new()
 }
 
@@ -204,6 +241,27 @@ mod tests {
         assert!(is_newer("1.0.0", "0.9.0"));
         assert!(!is_newer("0.9.0", "0.9"));
         assert!(!is_newer("0.8.9", "0.9.0"));
+    }
+    #[test]
+    fn pending_check() {
+        // Geçici veri klasörü (gerçek %APPDATA%'ya dokunulmaz).
+        let d = std::env::temp_dir().join(format!("meowly-upd-test-{}", std::process::id()));
+        let _ = std::fs::create_dir_all(&d);
+        std::env::set_var("APPDATA", &d);
+        // Kurulumu başlatılan sürüm kurulmamış: uyarı kalır.
+        store::kv_set(K_PENDING, "99.0.0");
+        check_pending();
+        assert_eq!(store::kv_get(K_FAILED).as_deref(), Some("99.0.0"));
+        assert_eq!(page_state()["failed"], "99.0.0");
+        assert_eq!(store::kv_get(K_PENDING).as_deref(), Some(""));
+        // Kurulmuş (şu anki sürüm ya da daha eski): uyarı silinir.
+        store::kv_set(K_PENDING, current());
+        check_pending();
+        assert_eq!(store::kv_get(K_FAILED).as_deref(), Some(""));
+        assert!(page_state()["failed"].is_null());
+        let log = std::fs::read_to_string(d.join("Meowly").join("update.log")).unwrap();
+        assert!(log.contains("99.0.0 kurulamadı") && log.contains("kuruldu"), "{log}");
+        let _ = std::fs::remove_dir_all(&d);
     }
     #[test]
     fn urls() {

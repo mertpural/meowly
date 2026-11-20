@@ -28,6 +28,7 @@ Object.assign(out, {
   "Bu bilgisayarda yapay zekâ aracı bulunamadı": "No AI tools found on this computer",
   "Claude Code, Codex, Gemini CLI, Antigravity, OpenCode, Kimi ya da Cline kullanmaya başlayınca Tonti burayı kendiliğinden doldurur. Hangisinin kurulu olmadığını Ayarlar → Sağlayıcılar'da görebilirsin.": "Once you start using Claude Code, Codex, Gemini CLI, Antigravity, OpenCode, Kimi or Cline, Tonti fills this in by itself. See which ones are missing in Settings → Providers.",
   "SAĞLAYICILAR": "PROVIDERS",
+  "Son güncelleme (%@) kurulamadı. Siteden indirip kurabilirsin; ayarların ve kayıtların silinmez.": "The last update (%@) could not be installed. You can download it from the site and install it; your settings and records are kept.",
   "Aç": "Open",
   "Çık": "Quit",
   "Bu sağlayıcı Windows sürümünde henüz okunmuyor.": "This provider is not read on Windows yet.",

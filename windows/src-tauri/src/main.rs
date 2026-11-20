@@ -90,6 +90,7 @@ fn run_main() {
         });
         if std::env::var_os("MEOWLY_NOTRAY").is_none() { tray::add(); }
         if std::env::var_os("MEOWLY_NOSTRIP").is_none() { strip::start(); }
+        update::check_pending();
         data::start(cat::notify);
         if std::env::var_os("MEOWLY_NOLOG").is_none() { activity::start(); }
         let mut msg = MSG::default();
