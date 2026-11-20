@@ -44,7 +44,8 @@ extern "system" fn main_proc(hwnd: HWND, msg: u32, wp: WPARAM, lp: LPARAM) -> LR
     static TASKBAR_CREATED: OnceLock<u32> = OnceLock::new();
     let tc = *TASKBAR_CREATED.get_or_init(|| unsafe { RegisterWindowMessageW(windows::core::w!("TaskbarCreated")) });
     match msg {
-        ipc::WM_IPC_REFRESH => data::refresh_now_fast(),
+        // Yalnızca kullanıcının elle yenilemesi bu mesajı gönderir: Claude limiti de hemen ölçülsün.
+        ipc::WM_IPC_REFRESH => { claude::force_probe(); data::refresh_now_fast() }
         ipc::WM_IPC_TOGGLE_BOX => { cat::toggle_box(); strip::refresh(); }
         ipc::WM_IPC_QUIT => unsafe { PostQuitMessage(0) },
         ipc::WM_IPC_SETTINGS => { settings::reload(); strip::refresh(); data::refresh_now_fast(); activity::send(activity::Msg::Settings); }
@@ -163,6 +164,8 @@ fn main() {
     // Geliştirme: verileri okuyup yalnızca sayıları yazar (anahtar, sohbet içeriği yok).
     if std::env::args().any(|a| a == "--dump") {
         claude::mark_launch();
+        // Geliştirme: "Senkronize et" ile aynı yol (limit hemen ölçülür).
+        if std::env::var_os("MEOWLY_FORCE_PROBE").is_some() { claude::force_probe(); }
         println!("durum satiri: {:?}", claude::read_status_line());
         let t0 = std::time::Instant::now();
         let c = claude::read();

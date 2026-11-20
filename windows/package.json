@@ -1,7 +1,7 @@
 {
   "name": "meowly-windows",
   "private": true,
-  "version": "0.9.2",
+  "version": "1.1.0",
   "scripts": {
     "tauri": "tauri"
   },

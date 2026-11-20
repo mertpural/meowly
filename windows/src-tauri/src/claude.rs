@@ -311,20 +311,68 @@ pub fn run_cli(args: &[&str], secs: u64) -> Option<(bool, Vec<u8>)> {
 }
 
 static LAUNCHED: OnceLock<f64> = OnceLock::new();
+static FORCE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// Kullanıcı elle yeniledi ("Senkronize et", açılır penceredeki yenileme): bir sonraki okumada limit hemen ölçülür.
+pub fn force_probe() { FORCE.store(true, std::sync::atomic::Ordering::SeqCst); }
 pub fn mark_launch() { let _ = LAUNCHED.set(sense::now_secs()); }
 
 /// Limiti Claude Code'un kendi komutuyla ölçer (akıştaki `rate_limit_event`). En sık 5 dakikada bir ve yalnızca
 /// son değerden sonra yeni yerel Claude kullanımı olduysa. Açılışta kayıtlı değer varsa ilk 3 dakika beklenir.
+pub struct ProbeInput { pub forced: bool, pub now: f64, pub last: f64, pub last_api: f64, pub stored_at: Option<f64>, pub launched: f64, pub latest_use: f64, pub user_idle: f64 }
+
+#[derive(Debug, PartialEq)]
+pub enum Measure { None, Cli, Api }
+
+/// Limit şimdi ölçülsün mü, hangi yolla (Mac: CLIProbe.measureIfDue; Windows'ta iki ek kural):
+/// - Bu bilgisayarda son değerden sonra yeni Claude kullanımı varsa Claude Code komutuyla (en sık 5 dk'da bir; Mac ile aynı).
+/// - Yoksa da kullanıcı bilgisayar başındaysa (5 dk içinde klavye/fare) 15 dk'da bir Anthropic'in kullanım adresinden (OAuth):
+///   Claude telefonda, tarayıcıda ya da uygulamanın sohbetinde kullanılınca limit değişir ama burada iz bırakmaz. Adres
+///   istek göndermez, limitten harcamaz (komut her seferinde küçük bir istek gönderir).
+/// - Elle "Senkronize et": son ölçümden 1 dk geçtiyse hemen, adresten (olmazsa komutla).
+/// - Hiç ölçülmemişse komutla; açılıştan sonraki 3 dk kayıtlı değer varsa beklenir.
+pub fn measure_due(i: &ProbeInput) -> Measure {
+    let latest = i.last.max(i.last_api);
+    if i.forced { return if i.now - latest >= 60.0 { Measure::Api } else { Measure::None }; }
+    let Some(at) = i.stored_at else { return if i.now - i.last >= 300.0 { Measure::Cli } else { Measure::None } };
+    if i.now - i.launched < 180.0 { return Measure::None; }
+    let r#ref = at.max(i.last);
+    if i.latest_use > r#ref && i.now - i.last >= 300.0 { return Measure::Cli; }
+    if i.now - at.max(latest) >= 900.0 && i.user_idle < 300.0 { return Measure::Api; }
+    Measure::None
+}
+
 fn probe_if_due() -> Option<Limits> {
     if !cli_available() { return None; }
-    let last = store::kv_f64("claudeLastProbe");
-    let now = sense::now_secs();
-    if now - last < 300.0 { return None; }
+    let forced = FORCE.swap(false, std::sync::atomic::Ordering::SeqCst);
     let st = stored();
-    if st.is_some() && now - LAUNCHED.get().copied().unwrap_or(now) < 180.0 { return None; }
-    let r#ref = st.as_ref().map(|s| s.fetched_at).unwrap_or(0.0).max(last);
-    if st.is_some() && store::latest_event("claude") <= r#ref { return None; }
-    store::kv_set("claudeLastProbe", &now.to_string());
+    let now = sense::now_secs();
+    let m = measure_due(&ProbeInput {
+        forced, now, last: store::kv_f64("claudeLastProbe"), last_api: store::kv_f64("claudeLastAttempt"),
+        stored_at: st.as_ref().map(|s| s.fetched_at), launched: LAUNCHED.get().copied().unwrap_or(now),
+        latest_use: store::latest_event("claude"), user_idle: sense::user_idle(),
+    });
+    match m {
+        Measure::None => None,
+        Measure::Cli => run_probe(),
+        Measure::Api => {
+            // Hız sınırı beklemesi sürüyorsa ya da adres yanıt vermezse: periyodik ölçüm bu turu atlar, elle senkron komutla ölçer.
+            let ok = if now < store::kv_f64("claudeBackoffUntil") { None } else {
+                store::kv_set("claudeLastAttempt", &now.to_string());
+                match request_with(true, false) {
+                    Ok(l) => Some(l),
+                    Err(ApiErr::RateLimited(ra)) => { store::kv_set("claudeBackoffUntil", &(now + ra.max(300.0)).to_string()); None }
+                    Err(_) => None,
+                }
+            };
+            if ok.is_none() && forced && now - store::kv_f64("claudeLastProbe") >= 60.0 { return run_probe(); }
+            ok
+        }
+    }
+}
+
+/// Claude Code komutuyla ölçer (tek satırlık küçük bir Haiku isteği).
+fn run_probe() -> Option<Limits> {
+    store::kv_set("claudeLastProbe", &sense::now_secs().to_string());
     let (_, out) = run_cli(&["-p", ".", "--model", "haiku", "--output-format", "stream-json", "--verbose",
                              "--no-session-persistence", "--tools", "", "--strict-mcp-config", "--disable-slash-commands"], 90)?;
     let r = parse_probe(&out);
@@ -386,11 +434,16 @@ fn refresh_login_via_cli() -> bool {
 
 enum ApiErr { Msg(String), RateLimited(f64) }
 
-fn request(retry: bool) -> Result<Limits, ApiErr> {
+fn request(retry: bool) -> Result<Limits, ApiErr> { request_with(retry, true) }
+
+/// `refresh`: oturum bitmek üzereyse Claude Code'a yenilettir (bu küçük bir istek gönderir). Komut kuruluyken yapılan
+/// adres okumalarında kapalıdır: oturumun süresi dolmuşsa okuma atlanır, ölçümü bir sonraki kullanımda komut yapar.
+fn request_with(retry: bool, refresh: bool) -> Result<Limits, ApiErr> {
     let mut tok = load_token(!retry).map_err(ApiErr::Msg)?;
     let exp = token_slot().lock().unwrap().as_ref().and_then(|t| t.expires);
-    if exp.map(|e| e < sense::now_secs() + 120.0).unwrap_or(false) && refresh_login_via_cli() {
-        if let Ok(t) = load_token(true) { tok = t; }
+    if exp.map(|e| e < sense::now_secs() + 120.0).unwrap_or(false) {
+        if !refresh { return Err(ApiErr::Msg(l10n::t("Oturum süresi dolmuş; Claude Code'u açınca yenilenir"))); }
+        if refresh_login_via_cli() { if let Ok(t) = load_token(true) { tok = t; } }
     }
     let resp = ureq::get("https://api.anthropic.com/api/oauth/usage")
         .timeout(std::time::Duration::from_secs(15))
@@ -402,7 +455,8 @@ fn request(retry: bool) -> Result<Limits, ApiErr> {
     let body = match resp {
         Ok(r) => r.into_string().map_err(|_| ApiErr::Msg(l10n::t("Ağ hatası")))?,
         Err(ureq::Error::Status(401, _)) => {
-            if retry { refresh_login_via_cli(); return request(false); }
+            if retry && refresh { refresh_login_via_cli(); return request_with(false, refresh); }
+            if retry { return request_with(false, false); }
             return Err(ApiErr::Msg(l10n::t("Oturum süresi dolmuş; Claude Code'u açınca yenilenir")));
         }
         Err(ureq::Error::Status(429, r)) => {
@@ -482,4 +536,32 @@ pub fn read() -> ProviderUsage {
     }
     u.auth_expired = store::kv_get("claudeAuthExpired").as_deref() == Some("1");
     u
+}
+
+#[cfg(test)]
+mod probe_tests {
+    use super::*;
+    fn inp() -> ProbeInput { ProbeInput { forced: false, now: 10_000.0, last: 0.0, last_api: 0.0, stored_at: Some(9_000.0), launched: 0.0, latest_use: 0.0, user_idle: 0.0 } }
+    #[test]
+    fn rules() {
+        // Hiç ölçülmemiş: komutla.
+        assert_eq!(measure_due(&ProbeInput { stored_at: None, ..inp() }), Measure::Cli);
+        // Bu bilgisayarda kullanım var, son komut ölçümü 5 dk'dan eski: komutla.
+        assert_eq!(measure_due(&ProbeInput { latest_use: 9_500.0, last: 9_000.0, user_idle: 999.0, ..inp() }), Measure::Cli);
+        // Kullanım var ama son komut ölçümü 5 dk'dan yeni: bekle.
+        assert_eq!(measure_due(&ProbeInput { latest_use: 9_900.0, last: 9_800.0, stored_at: Some(9_800.0), ..inp() }), Measure::None);
+        // Kullanım yok, son değer 15 dk'dan eski, kullanıcı başında: adresten (istek göndermez).
+        assert_eq!(measure_due(&ProbeInput { stored_at: Some(9_000.0), last: 9_000.0, user_idle: 30.0, ..inp() }), Measure::Api);
+        // Kullanım yok, kullanıcı uzakta: ölçme.
+        assert_eq!(measure_due(&ProbeInput { stored_at: Some(9_000.0), last: 9_000.0, user_idle: 600.0, ..inp() }), Measure::None);
+        // Son adres denemesi 15 dk içinde (başarısız olsa da): her turda yeniden denenmez.
+        assert_eq!(measure_due(&ProbeInput { stored_at: Some(8_000.0), last: 8_000.0, last_api: 9_500.0, ..inp() }), Measure::None);
+        // Son değer 10 dk önce: bekle.
+        assert_eq!(measure_due(&ProbeInput { stored_at: Some(9_400.0), last: 9_400.0, ..inp() }), Measure::None);
+        // Açılıştan sonraki 3 dk: bekle.
+        assert_eq!(measure_due(&ProbeInput { launched: 9_900.0, latest_use: 9_950.0, ..inp() }), Measure::None);
+        // Elle senkron: 1 dk geçtiyse hemen, adresten.
+        assert_eq!(measure_due(&ProbeInput { forced: true, last: 9_900.0, launched: 9_990.0, ..inp() }), Measure::Api);
+        assert_eq!(measure_due(&ProbeInput { forced: true, last_api: 9_970.0, ..inp() }), Measure::None);
+    }
 }

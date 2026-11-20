@@ -910,11 +910,11 @@ impl Cat {
         let Some(i) = self.demo else { return };
         let d = Self::duration;
         let steps: Vec<(Anim, String, bool)> = vec![
-            (Anim::laptop(), format!("{}\nullage-cat · {}", l10n::t("✎ Not alıyorum…"), d(45.0 * 60.0)), false),
+            (Anim::laptop(), format!("{}\nmeowly · {}", l10n::t("✎ Not alıyorum…"), d(45.0 * 60.0)), false),
             (Anim::laptop(), format!("{}\nai_limit", l10n::t("✎ Yeni sayfa açtım")), false),
             (Anim::laptop(), format!("{}{}\n{}", d(90.0 * 60.0), l10n::t(" oldu"), l10n::t("Biraz esneyelim mi?")), false),
             (Anim::laptop(), format!("{}\n{}", l10n::f("Bugün %@ token!", &["1M".into()]), l10n::t("Deftere yazdım")), false),
-            (Anim::idle(), format!("{}\nullage-cat · {}", l10n::t("Oturumu kaydettim"), d(80.0 * 60.0)), false),
+            (Anim::idle(), format!("{}\nmeowly · {}", l10n::t("Oturumu kaydettim"), d(80.0 * 60.0)), false),
             (Anim::content(), l10n::t("Mırr…"), true),
             (Anim::idle(), format!("{}: {}{}\n{}", l10n::t("Dün"), d(190.0 * 60.0), l10n::f(" · %lld proje", &["2".into()]), l10n::t("Rapor hazır, bana tıkla")), false),
         ];
@@ -1346,7 +1346,7 @@ pub fn gallery(dir: &std::path::Path) {
     }
     // Balonlar
     let texts = [
-        format!("{}\nullage-cat · 45 dk", l10n::t("✎ Not alıyorum…")),
+        format!("{}\nmeowly · 45 dk", l10n::t("✎ Not alıyorum…")),
         l10n::t("Mırr…"),
         format!("1 sa 30 dk{}\n{}", l10n::t(" oldu"), l10n::t("Biraz esneyelim mi?")),
     ];

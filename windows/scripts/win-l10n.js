@@ -11,11 +11,12 @@ const fromTxt = {
   starter: "When the 5-hour window ends, sends Haiku a one-line request to start the next window early. It gives no extra limit, it only decides when the window starts. Each request uses very few tokens. The request isn't saved to chat history, so it doesn't show up in the Claude app.",
   commits: "Commit titles you make in the project folder during a session go into the diary and reports. Only your own commits are read and nothing leaves your computer.",
   logIntro: "Tonti notes what you do on the computer to fill your diary and reports. Everything stays on this computer and is never sent anywhere.",
-  logTitles: "Shows which file or document you worked on (like \"CatPet.swift — ullage-cat\"). Only the front window's name is read; it never looks at your keys or screen. Browser titles are not stored.",
+  logTitles: "Shows which file or document you worked on (like \"Report.docx - Word\"). Only the front window's name is read; it never looks at your keys or screen. Browser titles are not stored.",
   logSites: "Keeps how long you stay on each site by domain only (like youtube.com). Page titles, full URLs and contents are not stored; private windows are skipped.",
   logFiles: "Counts changes per hour in the project folders you use with AI tools. File names and contents are not stored.",
 
   ghToken: "GitHub > Settings > Developer settings > Fine-grained tokens: select only this profile repo and grant Contents: Read and write. The token stays only in this computer's Windows Credential Manager.",
+  claudeLimit: "Claude limit percentage: when Claude Code is installed, it is measured with its command at most every 5 minutes while you use Claude on this computer. Even if you don't, it is read from Anthropic's usage address every 15 minutes while you are at the computer (so it stays current when you use Claude on your phone or in the browser; this read doesn't use your limit). \"Sync\" reads it right away. Without Claude Code, the address is asked at most once a minute. The last value is shown in between; windows that reset show 100% right away.",
   claudeSrc: "Claude: ~/.claude logs (tokens), Claude Code status line / command or Anthropic usage endpoint (limit)",
 };
 const out = {};

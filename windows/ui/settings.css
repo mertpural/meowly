@@ -46,6 +46,8 @@
 .bl b { font-size: 12px; }
 .bl span { font-size: 11.5px; color: var(--sub); }
 .pxmenu { position: relative; }
+/* Açık menü, sonraki kartların altında kalmasın: menüyü içeren kart öne alınır (her .px kendi katmanında çizilir). */
+.px:has(.mlist) { z-index: 20; }
 .mlist { position: absolute; right: 0; top: 30px; z-index: 5; display: flex; flex-direction: column; padding: 6px 0; min-width: 160px; }
 .mlist a { padding: 5px 12px; font-size: 12px; cursor: pointer; }
 .mlist a:hover { background: var(--ink); color: var(--paper); }
