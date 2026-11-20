@@ -31,7 +31,7 @@ cat > "$APP/Contents/Info.plist" <<'EOF'
     <key>CFBundleExecutable</key><string>UllageCat</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.1.2</string>
+    <key>CFBundleShortVersionString</key><string>1.1.3</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSUIElement</key><true/>
     <key>NSCalendarsFullAccessUsageDescription</key><string>Meowly, günlüğünde ve raporlarında toplantılarını göstermek için takvimini okur. Hiçbir şey değiştirmez, bilgisayardan dışarı göndermez.</string>

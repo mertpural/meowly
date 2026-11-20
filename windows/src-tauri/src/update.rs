@@ -215,21 +215,44 @@ pub fn install() -> String {
         Some((name, v)) if name == "Meowly" && v == ver && is_newer(&v, current()) => {}
         other => { log(format!("sürüm bilgisi tutmadı: {other:?}")); return fail("Sürüm bilgisi tutmuyor. Güncelleme yapılmadı.") }
     }
-    // Ana süreci düzgün kapat (tepsi simgesi, açık kayıt), sonra kurulumu başlat: /P pasif, /UPDATE güncelleme, /R kurulunca aç.
+    // Kurulum, Meowly'den bağımsız küçük bir bekçiyle (cmd) başlatılır: Meowly kapanırken kurulum onunla birlikte ölmez.
+    // Bekçi kurulumun bitmesini bekler; Meowly sonra hâlâ kapalıysa (kurulum yarıda kaldıysa da) uygulamayı yeniden açar.
+    // Önce kurulum başlatılır, sonra ana süreç kapatılır: başlatılamazsa uygulama açık kalır.
+    let Some(dir) = installed_dir() else { return fail("Uygulama bu konumda güncellenemiyor. Yeni sürümü siteden indir.") };
+    store::kv_set(K_PENDING, ver);
+    if let Err(e) = spawn_detached_installer(&file, &dir.join("meowly.exe"), "meowly.exe") {
+        log(format!("kurulum başlatılamadı: {e}"));
+        store::kv_set(K_PENDING, "");
+        return fail("Güncelleme başarısız oldu");
+    }
+    log("kurulum başlatıldı (/P /UPDATE /R, bağımsız bekçiyle)");
+    // Ana süreci düzgün kapat (tepsi simgesi, açık kayıt). Kurulum da açık kalan Meowly süreçlerini kapatır.
     crate::ipc::post_main(crate::ipc::WM_IPC_QUIT, 0);
     for _ in 0..30 {
         if !crate::ipc::main_alive() { break; }
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
-    log(format!("doğrulandı; ana süreç kapandı mı: {}", !crate::ipc::main_alive()));
-    store::kv_set(K_PENDING, ver);
-    if let Err(e) = std::process::Command::new(&file).args(["/P", "/UPDATE", "/R"]).spawn() {
-        log(format!("kurulum başlatılamadı: {e}"));
-        store::kv_set(K_PENDING, "");
-        return fail("Güncelleme başarısız oldu");
-    }
-    log("kurulum başlatıldı (/P /UPDATE /R)");
+    log(format!("ana süreç kapandı mı: {}", !crate::ipc::main_alive()));
     String::new()
+}
+
+/// Kurulumu bağımsız bir cmd sürecinde başlatır (Meowly'nin iş nesnesinden ayrılır; gizli konsolda, pencere açılmaz).
+fn spawn_detached_installer(setup: &std::path::Path, exe: &std::path::Path, image: &str) -> std::io::Result<()> {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+    const CREATE_BREAKAWAY_FROM_JOB: u32 = 0x0100_0000;
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    // start /wait: kurulum bitene kadar bekle. ping: ~3 sn (kurulumun /R ile açtığı uygulama başlasın).
+    // tasklist | find: Meowly çalışmıyorsa aç (kurulum başarılıysa yeni, yarıda kaldıysa eski sürüm).
+    let script = format!(
+        "/c start \"\" /wait \"{}\" /P /UPDATE /R & ping -n 4 127.0.0.1 >nul & tasklist /FI \"IMAGENAME eq {image}\" | find /I \"{image}\" >nul || start \"\" \"{}\"",
+        setup.display(), exe.display());
+    let run = |flags: u32| std::process::Command::new("cmd.exe").raw_arg(&script).creation_flags(flags)
+        .stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null()).spawn();
+    // Gizli konsol: içindeki ping/tasklist de pencere açmaz (DETACHED_PROCESS her birine yeni pencere açtırıyordu).
+    let base = CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW;
+    // İş nesnesinden ayrılmaya izin yoksa (erişim reddi) ayrılmadan dene.
+    run(base | CREATE_BREAKAWAY_FROM_JOB).or_else(|_| run(base)).map(|_| ())
 }
 
 #[cfg(test)]
@@ -261,6 +284,34 @@ mod tests {
         assert!(page_state()["failed"].is_null());
         let log = std::fs::read_to_string(d.join("Meowly").join("update.log")).unwrap();
         assert!(log.contains("99.0.0 kurulamadı") && log.contains("kuruldu"), "{log}");
+        let _ = std::fs::remove_dir_all(&d);
+    }
+    /// Bekçi: kurulumu bekler, uygulama çalışmıyorsa açar. Pencere açmayan iki .vbs ile denenir (hiçbir şey kurulmaz).
+    #[test]
+    #[ignore]
+    fn detached_watchdog() {
+        let d = std::env::temp_dir().join(format!("meowly bekci {}", std::process::id()));
+        let _ = std::fs::create_dir_all(&d);
+        let mark = |n: &str| format!("Set f = CreateObject(\"Scripting.FileSystemObject\").CreateTextFile(\"{}\")
+f.Write WScript.Arguments.Count
+f.Close
+WScript.Sleep 500
+", d.join(n).display());
+        std::fs::write(d.join("kurulum.vbs"), mark("kurulum.txt")).unwrap();
+        std::fs::write(d.join("uygulama.vbs"), mark("uygulama.txt")).unwrap();
+        spawn_detached_installer(&d.join("kurulum.vbs"), &d.join("uygulama.vbs"), "boyle-bir-surec-yok.exe").unwrap();
+        for _ in 0..100 { if d.join("uygulama.txt").exists() { break; } std::thread::sleep(std::time::Duration::from_millis(100)); }
+        // Kurulum üç argümanla (/P /UPDATE /R) çalıştı, sonra uygulama açıldı.
+        assert_eq!(std::fs::read_to_string(d.join("kurulum.txt")).unwrap(), "3");
+        assert!(d.join("uygulama.txt").exists());
+        // Uygulama zaten çalışıyorsa (burada her zaman açık olan explorer.exe) ikinci kopya açılmaz.
+        let _ = std::fs::remove_file(d.join("uygulama.txt"));
+        let _ = std::fs::remove_file(d.join("kurulum.txt"));
+        spawn_detached_installer(&d.join("kurulum.vbs"), &d.join("uygulama.vbs"), "explorer.exe").unwrap();
+        for _ in 0..40 { if d.join("kurulum.txt").exists() { break; } std::thread::sleep(std::time::Duration::from_millis(100)); }
+        std::thread::sleep(std::time::Duration::from_secs(7));
+        assert!(d.join("kurulum.txt").exists());
+        assert!(!d.join("uygulama.txt").exists(), "uygulama zaten açıkken yeniden açılmamalı");
         let _ = std::fs::remove_dir_all(&d);
     }
     #[test]

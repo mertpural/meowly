@@ -132,7 +132,8 @@ final class UpdateModel: ObservableObject {
             PID="$1"; NEW="$2"; DEST="$3"
             while kill -0 "$PID" 2>/dev/null; do sleep 0.3; done
             rm -rf "$DEST.old"
-            mv "$DEST" "$DEST.old" || exit 1
+            # Eski sürüm kenara alınamazsa (ör. yazma izni yok) dokunmadan eskisini yeniden açar; uygulama kapalı kalmaz.
+            mv "$DEST" "$DEST.old" || { open "$DEST"; exit 1; }
             if ditto --norsrc --noextattr "$NEW" "$DEST" && xattr -cr "$DEST" && codesign -v "$DEST"; then
               rm -rf "$DEST.old"
             else
